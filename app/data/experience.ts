@@ -1,3 +1,5 @@
+import type { Locale } from 'app/i18n/config'
+
 export type ExperienceItem = {
   id: string
   dateLabel: string
@@ -17,7 +19,52 @@ export type EducationItem = {
 }
 
 /** Public subset for the portfolio. Keep in sync with LinkedIn / resume hub. */
-export const experience: ExperienceItem[] = [
+const experienceEn: ExperienceItem[] = [
+  {
+    id: 'rok-army',
+    dateLabel: '2021–2022',
+    title: 'Inventory & Transportation Specialist',
+    employer: 'Republic of Korea Army',
+    location: 'South Korea',
+    summary:
+      'Managed inventory and maintenance data for heavy recovery vehicles and kept operational readiness high.',
+    highlights: [
+      'Maintained recovery-vehicle inventory/maintenance accuracy and 100% operational readiness',
+      'Monitored parts and equipment stock with Excel usage logs for timely replenishment',
+      'Ran towing and recovery operations under pressure while keeping a zero-incident safety record',
+    ],
+  },
+  {
+    id: 'kj-technology',
+    dateLabel: 'Jul–Dec 2020',
+    title: 'Production Control & ISO Assistant',
+    employer: 'KJTechnology',
+    location: 'South Korea',
+    summary:
+      'Organized documentation and standardized production procedures for ISO 9001:2015 certification.',
+    highlights: [
+      'Prepared certification audits by organizing technical documents and standardizing operating procedures',
+      'Validated process compliance and record quality with production teams',
+      'Supported building a quality-management system through certification',
+    ],
+  },
+  {
+    id: 'within-company',
+    dateLabel: 'Jan–Jun 2020',
+    title: 'Supply Chain Manager',
+    employer: 'Within Company Co., Ltd.',
+    location: 'South Korea',
+    summary:
+      'Analyzed delivery routes and schedules to cut delivery time and run daily logistics operations.',
+    highlights: [
+      'Identified delivery-network inefficiencies using route data from 14 drivers',
+      'Cut total delivery time by 23% through route rebalancing and time-slot adjustments',
+      'Monitored daily logistics schedules and on-time delivery for 2,500 meals',
+    ],
+  },
+]
+
+const experienceKo: ExperienceItem[] = [
   {
     id: 'rok-army',
     dateLabel: '2021–2022',
@@ -62,7 +109,7 @@ export const experience: ExperienceItem[] = [
   },
 ]
 
-export const education: EducationItem[] = [
+const educationEn: EducationItem[] = [
   {
     id: 'uwaterloo',
     dateLabel: '2020–2025',
@@ -71,3 +118,21 @@ export const education: EducationItem[] = [
     detail: 'Mathematical Optimization · Computational Mathematics',
   },
 ]
+
+const educationKo: EducationItem[] = [
+  {
+    id: 'uwaterloo',
+    dateLabel: '2020–2025',
+    degree: 'Bachelor of Mathematics',
+    school: 'University of Waterloo',
+    detail: 'Mathematical Optimization · Computational Mathematics',
+  },
+]
+
+export function getExperience(locale: Locale): ExperienceItem[] {
+  return locale === 'ko' ? experienceKo : experienceEn
+}
+
+export function getEducation(locale: Locale): EducationItem[] {
+  return locale === 'ko' ? educationKo : educationEn
+}

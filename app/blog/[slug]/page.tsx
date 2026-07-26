@@ -2,9 +2,11 @@ import { notFound } from 'next/navigation'
 import { CustomMDX } from 'app/components/mdx'
 import { formatDate, getBlogPosts } from 'app/blog/utils'
 import { baseUrl } from 'app/sitemap'
+import { getLocale } from 'app/i18n/get-locale'
+import { locales } from 'app/i18n/config'
 
 export async function generateStaticParams() {
-  let posts = getBlogPosts()
+  let posts = getBlogPosts('en')
 
   return posts.map((post) => ({
     slug: post.slug,
@@ -15,7 +17,12 @@ export async function generateMetadata(props: {
   params: Promise<{ slug: string }>
 }) {
   let params = await props.params
-  let post = getBlogPosts().find((post) => post.slug === params.slug)
+  let locale = await getLocale()
+  let post =
+    getBlogPosts(locale).find((post) => post.slug === params.slug) ??
+    locales
+      .map((l) => getBlogPosts(l).find((p) => p.slug === params.slug))
+      .find((p) => p !== undefined)
   if (!post) {
     return
   }
@@ -58,7 +65,8 @@ export default async function Blog(props: {
   params: Promise<{ slug: string }>
 }) {
   let params = await props.params
-  let post = getBlogPosts().find((post) => post.slug === params.slug)
+  let locale = await getLocale()
+  let post = getBlogPosts(locale).find((post) => post.slug === params.slug)
 
   if (!post) {
     notFound()
@@ -81,6 +89,7 @@ export default async function Blog(props: {
               ? `${baseUrl}${post.metadata.image}`
               : `/og?title=${encodeURIComponent(post.metadata.title)}`,
             url: `${baseUrl}/blog/${post.slug}`,
+            inLanguage: locale === 'ko' ? 'ko-KR' : 'en-US',
             author: {
               '@type': 'Person',
               name: 'Lee',
@@ -93,7 +102,7 @@ export default async function Blog(props: {
       </h1>
       <div className="flex justify-between items-center mt-2 mb-8 text-sm">
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          {formatDate(post.metadata.publishedAt)}
+          {formatDate(post.metadata.publishedAt, locale, true)}
         </p>
       </div>
       <article className="prose">

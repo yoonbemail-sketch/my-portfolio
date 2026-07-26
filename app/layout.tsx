@@ -7,6 +7,7 @@ import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import Footer from './components/footer'
 import { baseUrl } from './sitemap'
+import { getLocale } from './i18n/get-locale'
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -42,14 +43,16 @@ function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ')
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const locale = await getLocale()
+
   return (
     <html
-      lang="en"
+      lang={locale}
       className={cx(
         'text-neutral-900 bg-neutral-50 dark:text-neutral-100 dark:bg-neutral-950',
         GeistSans.variable,
@@ -58,9 +61,9 @@ export default function RootLayout({
     >
       <body className="antialiased max-w-2xl mx-4 mt-8 lg:mx-auto">
         <main className="flex-auto min-w-0 mt-6 flex flex-col px-2 md:px-0">
-          <Navbar />
+          <Navbar locale={locale} />
           {children}
-          <Footer />
+          <Footer locale={locale} />
           <Analytics />
           <SpeedInsights />
         </main>

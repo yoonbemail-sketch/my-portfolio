@@ -1,3 +1,6 @@
+import { getDictionary } from 'app/i18n/dictionaries'
+import type { Locale } from 'app/i18n/config'
+
 function ArrowIcon() {
   return (
     <svg
@@ -16,7 +19,9 @@ function ArrowIcon() {
   )
 }
 
-export default function Footer() {
+export default function Footer({ locale }: { locale: Locale }) {
+  const t = getDictionary(locale)
+
   return (
     <footer className="mb-16 border-t border-neutral-200 dark:border-neutral-800 pt-8 mt-16">
       <ul className="font-sm flex flex-col space-x-0 space-y-2 text-neutral-600 md:flex-row md:space-x-4 md:space-y-0 dark:text-neutral-400">
@@ -31,7 +36,7 @@ export default function Footer() {
         </li>
       </ul>
       <p className="mt-8 text-sm text-neutral-500 dark:text-neutral-500">
-        © {new Date().getFullYear()} Lee · Operations Analyst
+        © {new Date().getFullYear()} {t.footer.copyright}
       </p>
     </footer>
   )

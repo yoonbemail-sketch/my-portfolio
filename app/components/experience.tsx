@@ -1,6 +1,12 @@
-import { education, experience } from 'app/data/experience'
+import { getEducation, getExperience } from 'app/data/experience'
+import { getDictionary } from 'app/i18n/dictionaries'
+import type { Locale } from 'app/i18n/config'
 
-export function Experience() {
+export function Experience({ locale }: { locale: Locale }) {
+  const t = getDictionary(locale)
+  const experience = getExperience(locale)
+  const education = getEducation(locale)
+
   return (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col gap-6">
@@ -32,7 +38,7 @@ export function Experience() {
 
       <div>
         <h3 className="mb-4 text-sm font-medium tracking-tight text-neutral-500 dark:text-neutral-500">
-          Education
+          {t.home.educationHeading}
         </h3>
         <div className="flex flex-col gap-4">
           {education.map((item) => (

@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { formatDate, getBlogPosts } from 'app/blog/utils'
+import type { Locale } from 'app/i18n/config'
 
-export function BlogPosts() {
-  let allBlogs = getBlogPosts()
+export function BlogPosts({ locale }: { locale: Locale }) {
+  let allBlogs = getBlogPosts(locale)
 
   return (
     <div className="flex flex-col gap-6">
@@ -24,7 +25,7 @@ export function BlogPosts() {
             <div className="flex flex-col gap-1">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-3">
                 <time className="shrink-0 text-sm tabular-nums text-neutral-500 dark:text-neutral-500">
-                  {formatDate(post.metadata.publishedAt, false)}
+                  {formatDate(post.metadata.publishedAt, locale, false)}
                 </time>
                 <h3 className="text-base font-medium tracking-tight text-neutral-900 group-hover:underline group-hover:underline-offset-4 dark:text-neutral-100">
                   {post.metadata.title}

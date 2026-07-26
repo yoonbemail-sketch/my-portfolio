@@ -1,10 +1,16 @@
-export default function NotFound() {
+import { getDictionary } from 'app/i18n/dictionaries'
+import { getLocale } from 'app/i18n/get-locale'
+
+export default async function NotFound() {
+  const locale = await getLocale()
+  const t = getDictionary(locale)
+
   return (
     <section>
       <h1 className="mb-8 text-2xl font-semibold tracking-tighter">
-        404 - Page Not Found
+        {t.notFound.title}
       </h1>
-      <p className="mb-4">The page you are looking for does not exist.</p>
+      <p className="mb-4">{t.notFound.body}</p>
     </section>
   )
 }

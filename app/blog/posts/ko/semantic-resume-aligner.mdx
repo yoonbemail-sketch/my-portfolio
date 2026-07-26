@@ -1,0 +1,60 @@
+---
+title: 'Semantic Resume Aligner'
+publishedAt: '2026-07-10'
+summary: '로컬 Analyze → Apply → Autofill 파이프라인. 선택한 채용 탭에 이력서 버전을 매칭하고, Human Supervised 검수 하에 ATS 폼을 채웁니다.'
+---
+
+로컬에서 동작하는 Human-in-the-loop 지원서 도우미입니다. 사용자가 선택한 Chrome 탭에 붙고(채용 URL 붙여넣기 없음), JD에 맞춰 이력서 버전을 점수화한 뒤, private resume hub에서 ATS 폼을 채웁니다 — 제출은 절대 대신하지 않습니다.
+
+[GitHub](https://github.com/yoonbemail-sketch/semantic-resume-aligner)
+
+## Demo
+
+아래 `src`를 YouTube, Loom, Vimeo, 또는 `/public` 비디오 URL로 바꾸세요.
+
+<VideoEmbed
+  src="REPLACE_WITH_DEMO_VIDEO_URL"
+  title="Semantic Resume Aligner — Analyze → Apply → Autofill"
+/>
+
+## Problem
+
+채용 포털마다 스키마가 다른 동일 프로필 데이터를 반복 입력해야 합니다. 수동 입력은 느리고, 완전 무감독 autofill은 부정확하거나 과도하게 확신 있는 제출 위험이 있습니다. 플랫폼의 불투명한 “매치 점수”도 적합/부적합 이유를 숨깁니다.
+
+## Pipeline
+
+```text
+Active Job Tab ──> JD Extractor ──> Semantic Matcher ──> Structured Gap Analysis
+                                         ^
+                                         |
+                                  Resume Data Hub
+                                         |
+                                         v
+Active ATS Tab ──> ATS Detection ──> Selector Strategy ──> Reviewed Form Fill
+```
+
+Streamlit UI 흐름: **Analyze → Apply → Autofill**. 매칭은 applyability를 먼저 게이트합니다. Autofill은 soft ATS 감지와 공유 필드 카탈로그로 Workday, Greenhouse, SuccessFactors, Dayforce, Phenom, Oracle CX 등을 다룹니다.
+
+## Zero-URL contract
+
+Playwright가 CDP로 사용자 관리 Chrome에 붙고, 명시적으로 선택한 탭에서만 동작합니다. UI는 채용 URL이나 JD 텍스트 붙여넣기를 받지 않습니다 — 탐색, 인증, 최종 제출은 지원자가 통제합니다.
+
+## Human-supervised constraints
+
+apply 단계 이전의 필수 게이트:
+
+1. **No silent submit** — 명시적 승인 없이 draft를 게시하지 않음
+2. **Diff visibility** — 매핑된 필드와 수동 입력이 필요한 unmatched 필드를 리뷰어가 확인
+3. **Preserve curated fields** — hub profile 값을 오래된 import prose로 덮어쓰지 않음
+4. **Fail closed** — 모호한 ATS 페이지·매핑은 추측하지 않고 안전하게 중단
+
+## Tech stack
+
+Python · Streamlit · Playwright (CDP) · Pydantic · BeautifulSoup · pypdf / python-docx · Gemini / Anthropic / OpenAI
+
+## Design notes
+
+- 내구성 있는 지원자 데이터와 플랫폼별 selector·모델 추론을 분리
+- LLM gap analysis를 Pydantic으로 검증 (`APPLY` / `APPLY_WITH_CAUTION` / `DO_NOT_APPLY` / `NEEDS_REVIEW`)
+- 금방 낡는 resume prose 하드코딩보다 importer 기반 refresh 우선
+- 유료 URL classifier 대신 로컬 DOM signature로 ATS 감지

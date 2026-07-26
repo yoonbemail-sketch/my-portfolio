@@ -74,6 +74,88 @@ function PowerBIEmbed({
   )
 }
 
+function toEmbedSrc(src: string): string | null {
+  if (!src || src.includes('REPLACE_WITH')) return null
+
+  try {
+    const url = new URL(src)
+    const host = url.hostname.replace(/^www\./, '')
+
+    if (host === 'youtu.be') {
+      const id = url.pathname.split('/').filter(Boolean)[0]
+      return id ? `https://www.youtube.com/embed/${id}` : null
+    }
+
+    if (host === 'youtube.com' || host === 'm.youtube.com') {
+      const id = url.searchParams.get('v') || url.pathname.split('/').pop()
+      return id ? `https://www.youtube.com/embed/${id}` : null
+    }
+
+    if (host === 'loom.com' || host === 'www.loom.com') {
+      const match = url.pathname.match(/\/(?:share|embed)\/([a-zA-Z0-9]+)/)
+      return match ? `https://www.loom.com/embed/${match[1]}` : null
+    }
+
+    if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+      const id = url.pathname.split('/').filter(Boolean).pop()
+      return id ? `https://player.vimeo.com/video/${id}` : null
+    }
+  } catch {
+    // Local /public paths fall through to the <video> branch.
+  }
+
+  return null
+}
+
+function VideoEmbed({
+  src,
+  title = 'Demo video',
+}: {
+  src: string
+  title?: string
+}) {
+  const embedSrc = toEmbedSrc(src)
+  const isFile =
+    /\.(mp4|webm|ogg)(\?|$)/i.test(src) || src.startsWith('/')
+
+  return (
+    <figure className="my-8 w-full">
+      <div className="w-full overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
+        {embedSrc ? (
+          <iframe
+            src={embedSrc}
+            title={title}
+            className="w-full border-0"
+            style={{ aspectRatio: '16 / 9', minHeight: '360px' }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            loading="lazy"
+          />
+        ) : isFile && !src.includes('REPLACE_WITH') ? (
+          <video
+            src={src}
+            title={title}
+            controls
+            playsInline
+            className="w-full"
+            style={{ aspectRatio: '16 / 9', minHeight: '360px' }}
+          />
+        ) : (
+          <div
+            className="flex items-center justify-center px-6 text-center text-sm text-neutral-500 dark:text-neutral-400"
+            style={{ aspectRatio: '16 / 9', minHeight: '360px' }}
+          >
+            Demo video coming soon — paste a YouTube, Loom, or Vimeo URL.
+          </div>
+        )}
+      </div>
+      <figcaption className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+        {title}
+      </figcaption>
+    </figure>
+  )
+}
+
 function Code({ children, ...props }) {
   let codeHTML = highlight(children)
   return <code dangerouslySetInnerHTML={{ __html: codeHTML }} {...props} />
@@ -121,6 +203,7 @@ let components = {
   h6: createHeading(6),
   Image: RoundedImage,
   PowerBIEmbed,
+  VideoEmbed,
   a: CustomLink,
   code: Code,
   Table,

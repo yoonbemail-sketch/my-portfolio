@@ -1,0 +1,114 @@
+---
+title: 'Kream Sneakers Resale Market Analysis'
+publishedAt: '2026-07-01'
+summary: 'Resale market analysis from trade-history collection through star schema and a Power BI dashboard.'
+---
+
+An Operations Analyst deliverable on Kream sneakers resale: pricing signals and trade patterns by size and model. Focus is the end-to-end path from stable trade-history ingestion, through an analytics model, into decision-ready reporting.
+
+Source code stays private. This page summarizes design and analysis.
+
+## Problem
+
+Resale decisions need “how often this model/size trades, and at what price.” A few recent rows on a product page are not enough for seasonality, size premiums, or delivery-type price gaps.
+
+What is required:
+
+1. Long-run trade history at model × size grain
+2. A pipeline that can resume after interrupts or re-collection
+3. Fact / dimension structure Power BI can slice
+
+## Pipeline overview
+
+```text
+Product page (model / size metadata)
+        │
+        ▼
+Trade history collection (per size)
+        │
+        ▼
+CSV per model · size  (+ resume / merge)
+        │
+        ▼
+Validate · normalize dates · build sales fact
+        │
+        ▼
+Star schema in Power BI
+        │
+        ▼
+Dashboard (price · volume · seasonality)
+```
+
+Collection uses Playwright attached to a browser session and stores per-model, per-size trade rows (size, price, date, delivery type). A batch queue processes SKUs sequentially, merges size files, then exports a Power BI fact table.
+
+## Data quality rules
+
+Rules applied before the model:
+
+| Rule | Why |
+| --- | --- |
+| Size prefix validation | Prevent mixed-size rows during scroll collection |
+| Completion ratio (≥ 90%) | Check coverage vs expected trade volume |
+| Relative date → absolute | Normalize `3 hours ago` / `2 days ago` into `YY/MM/DD` |
+| Dedup on merge / update | Drop duplicates on re-collection; append only new trades |
+| Master product cache | Cache brand, size, release date, retail price in `sneakers_info` |
+
+## Data modeling (star schema)
+
+- **Fact** — `fact_transactions`: one completed resale trade per row (price, size, date, delivery type, model FK)
+- **Dimensions** — `dim_product` (model no, name, brand, release date, retail price), `dim_size`, `dim_date`, `dim_delivery`
+- **Grain** — one trade
+- **Relationships** — dimension → fact one-to-many; bidirectional filters only when needed
+
+```text
+dim_product ──┐
+dim_size    ──┼──► fact_transactions
+dim_date    ──┤
+dim_delivery──┘
+```
+
+## Dashboard
+
+Replace `src` with a published Power BI embed URL to show the dashboard on this page.
+
+<PowerBIEmbed
+  src="https://app.powerbi.com/view?r=REPLACE_WITH_YOUR_EMBED_TOKEN"
+  title="Kream sneakers resale market dashboard"
+/>
+
+Questions the dashboard answers:
+
+- Price bands and seasonality by brand / silhouette
+- Size premium (median trade price by size within a model)
+- Price and volume differences by delivery type
+- Resale premium vs retail (when retail price is available)
+
+## DAX notes
+
+- Prefer **relationships** over calculated columns that duplicate dimension attributes
+- Keep dynamic filter logic in **measures**
+- Use **VAR** to avoid repeating the same filter context
+
+```dax
+Median Sale Price =
+MEDIAN ( fact_transactions[price] )
+
+Resale Premium % =
+DIVIDE (
+    [Median Sale Price] - SELECTEDVALUE ( dim_product[retail_price] ),
+    SELECTEDVALUE ( dim_product[retail_price] )
+)
+```
+
+## Stack
+
+| Layer | Tools |
+| --- | --- |
+| Collection | Python, Playwright (CDP) |
+| Storage / ETL | CSV per SKU·size, merge · validate · Power BI fact export |
+| Analytics | Power BI (star schema, DAX) |
+| Ops | Batch queue, resume on interrupt, push notify on long runs |
+
+## Results
+
+Built a flow that loads model×size trade history, merges and validates it, then connects it to a Power BI fact table. Dashboard embed and brand/season insight numbers will be refreshed on this page after the publish URL and sample SKUs are finalized.
