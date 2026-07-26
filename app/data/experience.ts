@@ -21,6 +21,20 @@ export type EducationItem = {
 /** Public subset for the portfolio. Keep in sync with LinkedIn / resume hub. */
 const experienceEn: ExperienceItem[] = [
   {
+    id: 'sneaker-resale',
+    dateLabel: '2022–Present',
+    title: 'Sneaker Resale Operator',
+    employer: 'Self-employed',
+    location: 'Canada / South Korea',
+    summary:
+      'Run a sneaker resale operation with SKU-level inventory, pricing controls, and market tracking to guide buy/sell decisions.',
+    highlights: [
+      'Manage inventory and pricing across listed SKUs to protect margin and turn inventory faster',
+      'Track trade history, size premiums, and seasonality to set data-backed buy/sell thresholds',
+      'Build Python and Power BI workflows to monitor resale premiums, volume, and sell-through',
+    ],
+  },
+  {
     id: 'rok-army',
     dateLabel: '2021–2022',
     title: 'Inventory & Transportation Specialist',
@@ -65,6 +79,20 @@ const experienceEn: ExperienceItem[] = [
 ]
 
 const experienceKo: ExperienceItem[] = [
+  {
+    id: 'sneaker-resale',
+    dateLabel: '2022–Present',
+    title: 'Sneaker Resale Operator',
+    employer: 'Self-employed',
+    location: 'Canada / South Korea',
+    summary:
+      '스니커즈 리셀 운영을 하며 SKU 단위 재고·가격 관리와 시장 추적으로 매입·매도 의사결정을 했습니다.',
+    highlights: [
+      '리스팅 SKU의 재고·가격을 관리해 마진을 지키고 회전을 높임',
+      '거래내역·사이즈 프리미엄·시즌성을 추적해 데이터 기반 매입·매도 기준 설정',
+      'Python·Power BI로 리셀 프리미엄, 거래량, sell-through를 모니터링하는 워크플로 구축',
+    ],
+  },
   {
     id: 'rok-army',
     dateLabel: '2021–2022',
