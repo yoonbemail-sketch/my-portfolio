@@ -8,7 +8,7 @@ export function Navbar({ locale }: { locale: Locale }) {
   const navItems = [
     { href: '/', name: t.nav.home },
     { href: '/#experience', name: t.nav.experience },
-    { href: '/blog', name: t.nav.projects },
+    { href: '/#projects', name: t.nav.projects },
   ]
 
   return (
