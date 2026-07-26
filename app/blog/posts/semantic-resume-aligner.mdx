@@ -1,0 +1,65 @@
+---
+title: 'semantic-resume-aligner'
+publishedAt: '2026-07-10'
+summary: 'Resume form-filling automation pipeline with bottleneck reduction and human-supervised review constraints.'
+---
+
+An automation pipeline that maps curated resume content into application form fields. Designed for throughput without removing human judgment from the final gate.
+
+## Problem
+
+Job applications repeat the same profile data across portals with different schemas. Manual filling is slow and error-prone; fully unsupervised autofill risks incorrect or overconfident submissions.
+
+## Pipeline overview
+
+```text
+Source resume / hub profile
+        │
+        ▼
+Normalize + version content
+        │
+        ▼
+Field mapping (importer / aligner)
+        │
+        ▼
+Draft filled form (diff / preview)
+        │
+        ▼
+Human supervised review  ◄── hard constraint
+        │
+        ▼
+Apply only after approval
+```
+
+## Bottleneck improvement
+
+Describe where time was spent and what changed:
+
+| Stage | Before | After | Lever |
+| --- | --- | --- | --- |
+| Content refresh | — | — | Importer flags (`--diff`, `--versions`, `--refresh-details`) |
+| Field alignment | — | — | Schema mapping + reuse of curated hub fields |
+| Review queue | — | — | Diff-first preview so humans only check deltas |
+
+Focus the write-up on **queue time**, **rework rate**, and **fields that still need manual entry**.
+
+## Human supervised constraints
+
+Non-negotiable gates before any apply step:
+
+1. **No silent submit** — drafts are never posted without explicit approval
+2. **Diff visibility** — reviewer sees what will change vs the previous version
+3. **Preserve curated fields** — hub profile values are not overwritten by stale import prose
+4. **Fail closed** — ambiguous mappings stay empty or flagged rather than guessed
+
+## Design notes
+
+- Prefer importer-based refreshes over hardcoding resume prose that goes stale
+- Keep regular resume and detailed-experience updates as separate, repeatable flows
+- Log decisions so failed mappings can be improved without reprocessing everything
+
+## Results (draft)
+
+- [ ] Cycle time per application (before / after)
+- [ ] % of fields auto-filled vs manually corrected
+- [ ] False-positive mapping incidents caught in review

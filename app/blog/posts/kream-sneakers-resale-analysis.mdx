@@ -1,0 +1,58 @@
+---
+title: 'Kream 스니커즈 리셀 시장 분석'
+publishedAt: '2026-07-01'
+summary: 'Power BI 대시보드 임베드, 스타 스키마 데이터 모델링, DAX 최적화 경험을 정리하는 분석 프로젝트.'
+---
+
+Kream 스니커즈 리셀 시장의 가격 신호, 재고 회전, 카테고리 성과를 분석한 Operations Analyst 산출물입니다. 시맨틱 모델과 임베드 가능한 리포팅 구조를 중심으로 작성합니다.
+
+## Dashboard
+
+아래 `src`를 게시된 Power BI embed URL로 교체하세요.
+
+<PowerBIEmbed
+  src="https://app.powerbi.com/view?r=REPLACE_WITH_YOUR_EMBED_TOKEN"
+  title="Kream sneakers resale market dashboard"
+/>
+
+## Data modeling (star schema)
+
+모델 설계를 기록하는 섹션입니다.
+
+- **Fact table** — 예: `fact_transactions` (sale price, quantity, timestamp, foreign keys)
+- **Dimensions** — `dim_product`, `dim_brand`, `dim_seller`, `dim_date`, `dim_category`
+- **Grain** — 완료된 리셀 거래 1건당 1행 (또는 선택한 grain)
+- **Relationships** — dimension → fact 의 one-to-many; bidirectional filter는 필요한 경우만
+
+```text
+dim_brand ──┐
+dim_product─┼──► fact_transactions
+dim_date  ──┤
+dim_seller──┘
+```
+
+## DAX optimization
+
+측정값 설계와 성능 관련 메모:
+
+- dimension 속성을 복제하는 calculated column보다 **star-schema relationship** 우선
+- 필터가 동적으로 유지되어야 하면 로직을 **measures**에 두고 row-context calculated column은 최소화
+- 동일 filter context 반복을 피하기 위해 **variables** (`VAR`) 사용
+- Performance Analyzer / DAX Studio로 storage engine vs formula engine 시간 검증
+
+예시 measure:
+
+```dax
+Total GMV =
+SUMX (
+    fact_transactions,
+    fact_transactions[sale_price] * fact_transactions[quantity]
+)
+```
+
+## Insights (draft)
+
+- [ ] 브랜드 / 실루엣별 가격대와 시즌성
+- [ ] Sell-through velocity 및 days-to-sale 분포
+- [ ] 리테일 대비 margin / spread (가용 시)
+- [ ] 모델 적재 전 적용한 데이터 품질 규칙

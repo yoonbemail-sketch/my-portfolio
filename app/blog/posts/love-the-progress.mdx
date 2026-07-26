@@ -1,0 +1,73 @@
+---
+title: 'Love the progress'
+publishedAt: '2026-07-20'
+summary: 'Database schema and backend logic design for a progress-focused product experience.'
+---
+
+A product-oriented project that shows how progress is stored, updated, and served. Emphasis is on schema clarity and backend rules rather than UI polish.
+
+## Product intent
+
+Track meaningful progress over time so users can see movement, not only snapshots. The data model should make “what changed” and “why it counts” easy to query.
+
+## Database schema (draft)
+
+Outline entities and relationships here:
+
+```text
+users
+  └── goals
+        └── milestones
+              └── progress_events
+
+optional:
+  tags / categories
+  reflections / notes
+  audit_log
+```
+
+### Suggested tables
+
+| Table | Purpose | Key fields |
+| --- | --- | --- |
+| `users` | Account identity | `id`, `email`, `created_at` |
+| `goals` | Long-running outcomes | `id`, `user_id`, `title`, `status`, `target_date` |
+| `milestones` | Checkpoints on a goal | `id`, `goal_id`, `title`, `sequence`, `completed_at` |
+| `progress_events` | Append-only activity | `id`, `goal_id`, `milestone_id?`, `kind`, `value`, `occurred_at` |
+
+Constraints worth calling out:
+
+- Progress events are **append-only** (corrections via compensating events, not silent edits)
+- Milestone completion is derived or explicitly set with a clear rule in the backend
+- Foreign keys and cascading rules documented (restrict vs cascade)
+
+## Backend logic
+
+Describe the domain rules the API enforces:
+
+1. **Create goal** — validate ownership; default status; optional first milestone
+2. **Record progress** — reject events that violate goal status (e.g. archived goals)
+3. **Complete milestone** — idempotent completion; emit a progress event in the same transaction
+4. **Read progress timeline** — ordered by `occurred_at`; support filters by goal / kind
+
+Example transaction boundary:
+
+```text
+BEGIN
+  insert progress_event
+  update milestone.completed_at (if applicable)
+  recompute goal status (if all milestones done)
+COMMIT
+```
+
+## Trade-offs
+
+- Append-only events cost storage but simplify audit and “love the progress” storytelling
+- Derived status vs stored status: pick one source of truth and document it
+- Soft delete vs hard delete for goals users abandon
+
+## Next steps (draft)
+
+- [ ] ERD diagram or migration snippets
+- [ ] API route list (REST or RPC) with auth boundaries
+- [ ] Sample queries for weekly progress summaries
