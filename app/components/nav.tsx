@@ -1,13 +1,10 @@
 import Link from 'next/link'
 
-const navItems = {
-  '/': {
-    name: 'home',
-  },
-  '/blog': {
-    name: 'projects',
-  },
-}
+const navItems = [
+  { href: '/', name: 'home' },
+  { href: '/#experience', name: 'experience' },
+  { href: '/blog', name: 'projects' },
+]
 
 export function Navbar() {
   return (
@@ -19,11 +16,11 @@ export function Navbar() {
           aria-label="Primary"
         >
           <div className="flex flex-row space-x-0 pr-10">
-            {Object.entries(navItems).map(([path, { name }]) => {
+            {navItems.map(({ href, name }) => {
               return (
                 <Link
-                  key={path}
-                  href={path}
+                  key={href}
+                  href={href}
                   className="hover:text-neutral-800 dark:hover:text-neutral-200 flex align-middle relative py-1 px-2 m-1 text-neutral-600 dark:text-neutral-400"
                 >
                   {name}
