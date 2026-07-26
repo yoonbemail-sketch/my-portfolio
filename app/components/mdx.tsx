@@ -17,12 +17,14 @@ function Table({ data }) {
   ))
 
   return (
-    <table>
-      <thead>
-        <tr>{headers}</tr>
-      </thead>
-      <tbody>{rows}</tbody>
-    </table>
+    <div className="my-5 w-full overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
+      <table className="m-0 w-full border-collapse text-[0.9em]">
+        <thead>
+          <tr>{headers}</tr>
+        </thead>
+        <tbody>{rows}</tbody>
+      </table>
+    </div>
   )
 }
 
