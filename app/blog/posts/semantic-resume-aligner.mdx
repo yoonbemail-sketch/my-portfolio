@@ -1,14 +1,14 @@
 ---
 title: 'semantic-resume-aligner'
 publishedAt: '2026-07-10'
-summary: 'Resume form-filling automation pipeline with bottleneck reduction and human-supervised review constraints.'
+summary: '이력서 작성 폼 필링 자동화 파이프라인. 병목 개선과 Human Supervised 최종 검수 제약을 다룹니다.'
 ---
 
-An automation pipeline that maps curated resume content into application form fields. Designed for throughput without removing human judgment from the final gate.
+큐레이션된 이력서 콘텐츠를 지원서 폼 필드로 매핑하는 자동화 파이프라인입니다. 처리량은 높이되, 최종 제출 게이트에서는 사람의 판단을 제거하지 않도록 설계합니다.
 
 ## Problem
 
-Job applications repeat the same profile data across portals with different schemas. Manual filling is slow and error-prone; fully unsupervised autofill risks incorrect or overconfident submissions.
+채용 포털마다 스키마가 다른 동일 프로필 데이터를 반복 입력해야 합니다. 수동 입력은 느리고 오류가 나기 쉽고, 완전 무감독 autofill은 부정확하거나 과도하게 확신 있는 제출 위험이 있습니다.
 
 ## Pipeline overview
 
@@ -33,33 +33,33 @@ Apply only after approval
 
 ## Bottleneck improvement
 
-Describe where time was spent and what changed:
+시간이 많이 쓰인 구간과 개선 내용을 기록합니다.
 
 | Stage | Before | After | Lever |
 | --- | --- | --- | --- |
 | Content refresh | — | — | Importer flags (`--diff`, `--versions`, `--refresh-details`) |
-| Field alignment | — | — | Schema mapping + reuse of curated hub fields |
-| Review queue | — | — | Diff-first preview so humans only check deltas |
+| Field alignment | — | — | Schema mapping + curated hub field 재사용 |
+| Review queue | — | — | Diff-first preview로 변경분만 검수 |
 
-Focus the write-up on **queue time**, **rework rate**, and **fields that still need manual entry**.
+작성 시 **queue time**, **rework rate**, **여전히 수동 입력이 필요한 필드**에 초점을 둡니다.
 
 ## Human supervised constraints
 
-Non-negotiable gates before any apply step:
+apply 단계 이전의 필수 게이트:
 
-1. **No silent submit** — drafts are never posted without explicit approval
-2. **Diff visibility** — reviewer sees what will change vs the previous version
-3. **Preserve curated fields** — hub profile values are not overwritten by stale import prose
-4. **Fail closed** — ambiguous mappings stay empty or flagged rather than guessed
+1. **No silent submit** — 명시적 승인 없이 draft를 게시하지 않음
+2. **Diff visibility** — 이전 버전 대비 변경 내용을 리뷰어가 확인
+3. **Preserve curated fields** — hub profile 값을 오래된 import prose로 덮어쓰지 않음
+4. **Fail closed** — 모호한 매핑은 추측하지 않고 비우거나 플래그 처리
 
 ## Design notes
 
-- Prefer importer-based refreshes over hardcoding resume prose that goes stale
-- Keep regular resume and detailed-experience updates as separate, repeatable flows
-- Log decisions so failed mappings can be improved without reprocessing everything
+- 금방 낡는 resume prose 하드코딩보다 importer 기반 refresh 우선
+- 일반 이력서와 detailed-experience 업데이트를 분리된 반복 가능한 흐름으로 유지
+- 실패한 매핑을 전체 재처리 없이 개선할 수 있도록 결정 로그 남김
 
 ## Results (draft)
 
-- [ ] Cycle time per application (before / after)
-- [ ] % of fields auto-filled vs manually corrected
-- [ ] False-positive mapping incidents caught in review
+- [ ] 지원서당 cycle time (before / after)
+- [ ] 자동 채움 vs 수동 수정 필드 비율
+- [ ] 리뷰에서 걸린 false-positive 매핑 건수

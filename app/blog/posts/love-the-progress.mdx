@@ -1,18 +1,18 @@
 ---
 title: 'Love the progress'
 publishedAt: '2026-07-20'
-summary: 'Database schema and backend logic design for a progress-focused product experience.'
+summary: '진행(progress)을 중심으로 한 제품의 데이터베이스 스키마와 백엔드 로직 설계 역량을 보여주는 프로젝트.'
 ---
 
-A product-oriented project that shows how progress is stored, updated, and served. Emphasis is on schema clarity and backend rules rather than UI polish.
+진행 상태가 어떻게 저장·갱신·제공되는지를 보여주는 제품형 프로젝트입니다. UI 장식보다 스키마 명확성과 백엔드 규칙에 초점을 둡니다.
 
 ## Product intent
 
-Track meaningful progress over time so users can see movement, not only snapshots. The data model should make “what changed” and “why it counts” easy to query.
+스냅샷만이 아니라 시간에 따른 의미 있는 진행을 추적합니다. 데이터 모델은 “무엇이 바뀌었는지”와 “왜 그것이 중요한지”를 쉽게 조회할 수 있어야 합니다.
 
 ## Database schema (draft)
 
-Outline entities and relationships here:
+엔티티와 관계를 여기에 정리합니다.
 
 ```text
 users
@@ -35,22 +35,22 @@ optional:
 | `milestones` | Checkpoints on a goal | `id`, `goal_id`, `title`, `sequence`, `completed_at` |
 | `progress_events` | Append-only activity | `id`, `goal_id`, `milestone_id?`, `kind`, `value`, `occurred_at` |
 
-Constraints worth calling out:
+명시할 제약:
 
-- Progress events are **append-only** (corrections via compensating events, not silent edits)
-- Milestone completion is derived or explicitly set with a clear rule in the backend
-- Foreign keys and cascading rules documented (restrict vs cascade)
+- Progress events는 **append-only** (수정은 silent edit가 아니라 compensating event)
+- Milestone 완료는 파생값이거나, 백엔드에 명확한 규칙으로 명시적 설정
+- Foreign key와 cascading 규칙 문서화 (restrict vs cascade)
 
 ## Backend logic
 
-Describe the domain rules the API enforces:
+API가 강제하는 도메인 규칙:
 
-1. **Create goal** — validate ownership; default status; optional first milestone
-2. **Record progress** — reject events that violate goal status (e.g. archived goals)
-3. **Complete milestone** — idempotent completion; emit a progress event in the same transaction
-4. **Read progress timeline** — ordered by `occurred_at`; support filters by goal / kind
+1. **Create goal** — ownership 검증; 기본 status; 선택적 첫 milestone
+2. **Record progress** — goal status 위반 이벤트 거부 (예: archived goals)
+3. **Complete milestone** — idempotent 완료; 동일 트랜잭션에서 progress event 발행
+4. **Read progress timeline** — `occurred_at` 정렬; goal / kind 필터 지원
 
-Example transaction boundary:
+트랜잭션 경계 예시:
 
 ```text
 BEGIN
@@ -62,12 +62,12 @@ COMMIT
 
 ## Trade-offs
 
-- Append-only events cost storage but simplify audit and “love the progress” storytelling
-- Derived status vs stored status: pick one source of truth and document it
-- Soft delete vs hard delete for goals users abandon
+- Append-only 이벤트는 저장 비용이 들지만 감사와 “love the progress” 스토리텔링이 단순해짐
+- Derived status vs stored status: 단일 source of truth를 정하고 문서화
+- 사용자가 포기한 goal에 대한 soft delete vs hard delete
 
 ## Next steps (draft)
 
-- [ ] ERD diagram or migration snippets
-- [ ] API route list (REST or RPC) with auth boundaries
-- [ ] Sample queries for weekly progress summaries
+- [ ] ERD 또는 migration 스니펫
+- [ ] API route 목록 (REST/RPC)과 auth boundary
+- [ ] 주간 progress summary용 샘플 쿼리

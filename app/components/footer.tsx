@@ -23,23 +23,10 @@ export default function Footer() {
         <li>
           <a
             className="flex items-center hover:text-neutral-900 dark:hover:text-neutral-100"
-            rel="noopener noreferrer"
-            target="_blank"
             href="/rss"
           >
             <ArrowIcon />
             <p className="ml-2 h-7">rss</p>
-          </a>
-        </li>
-        <li>
-          <a
-            className="flex items-center hover:text-neutral-900 dark:hover:text-neutral-100"
-            rel="noopener noreferrer"
-            target="_blank"
-            href="https://github.com/yoonbemail-sketch/my-portfolio"
-          >
-            <ArrowIcon />
-            <p className="ml-2 h-7">github</p>
           </a>
         </li>
       </ul>
