@@ -1,22 +1,16 @@
 ---
 title: 'Kream 스니커즈 리셀 시장 분석'
 publishedAt: '2026-07-01'
-summary: '거래내역 수집 파이프라인부터 스타 스키마·Power BI 대시보드까지 이어지는 리셀 시장 분석 프로젝트.'
+summary: '거래내역 수집부터 fact_sales 스타 스키마·Power BI 대시보드(프리미엄, 볼린저 시그널)까지 이어지는 리셀 시장 분석.'
 ---
 
-Kream 스니커즈 리셀 시장의 가격 신호와 사이즈·모델별 거래 패턴을 분석한 Operations Analyst 산출물입니다. 원천 거래 데이터를 안정적으로 적재하고, 분석용 모델로 정규화한 뒤 의사결정용 리포트로 연결하는 end-to-end 흐름에 초점을 둡니다.
+Kream 스니커즈 리셀 시장의 가격 신호와 사이즈·모델별 거래 패턴을 분석한 Operations Analyst 산출물입니다. 원천 거래 데이터를 적재·정규화한 뒤 Power BI 스타 스키마로 연결하고, 프리미엄·시즌성·매매 시그널까지 보는 리포트를 만들었습니다.
 
-소스 코드는 private로 유지합니다. 아래는 설계와 분석 관점의 요약입니다.
+소스 코드와 Power BI workspace는 private로 유지합니다. 아래는 실제 모델·대시보드 기준 요약입니다.
 
 ## Problem
 
-리셀 의사결정에는 “지금 이 모델·사이즈가 얼마에, 얼마나 자주 거래되는지”가 필요합니다. 화면에서 보이는 최근 몇 건만으로는 시즌성, 사이즈 프리미엄, 배송 유형별 가격 차이를 보기 어렵습니다.
-
-필요한 것:
-
-1. 모델·사이즈 단위의 장기 거래 이력
-2. 재수집·중단 후에도 이어서 적재할 수 있는 파이프라인
-3. Power BI에서 슬라이스할 수 있는 분석용 fact / dimension 구조
+리셀 의사결정에는 “지금 이 모델·사이즈가 얼마에, 얼마나 자주 거래되는지”와 “정가 대비 프리미엄이 어디에 있는지”가 필요합니다. 화면의 최근 몇 건만으로는 시즌성, 사이즈 프리미엄, 배송 유형별 차이를 보기 어렵습니다.
 
 ## Pipeline overview
 
@@ -30,73 +24,74 @@ Trade history collection (per size)
 CSV per model · size  (+ resume / merge)
         │
         ▼
-Validate · normalize dates · build sales fact
+Validate · normalize dates · sales fact export
         │
         ▼
-Star schema in Power BI
+Power BI star schema (fact_sales + dims)
         │
         ▼
-Dashboard (price · volume · seasonality)
+Dashboard pages (overview · price · signals · premium)
 ```
 
-수집은 Playwright 기반으로 브라우저 세션에 연결해 모델 번호·사이즈별 거래 행(사이즈, 가격, 날짜, 배송 유형)을 저장합니다. 배치 큐로 여러 SKU를 순차 처리하고, 사이즈별 파일을 병합한 뒤 Power BI용 fact 테이블로 합칩니다.
+수집은 Playwright(CDP)로 사이즈·가격·날짜·배송유형을 저장하고, 병합·검증 후 Power BI fact로 넘깁니다.
 
 ## Data quality rules
-
-모델에 넣기 전 적용하는 규칙:
 
 | Rule | Why |
 | --- | --- |
 | Size prefix validation | 스크롤 중 다른 사이즈 행이 섞이지 않도록 검증 |
 | Completion ratio (≥ 90%) | 기대 거래량 대비 충분히 모였는지 판정 |
-| Relative date → absolute | `3시간 전` / `2일 전` 등을 `YY/MM/DD`로 정규화 |
-| Dedup on merge / update | 재수집 시 중복 거래 제거, 신규분만 append |
-| Master product cache | `sneakers_info`에 브랜드·사이즈·발매일·정가를 캐시해 반복 분석 비용 절감 |
+| Relative date → absolute | `3시간 전` 등을 절대 날짜로 정규화 |
+| Dedup on merge / update | 재수집 시 중복 제거, 신규분만 append |
+| Master product cache | 브랜드·발매일·정가·카테고리를 `sneakers_info`에 캐시 |
 
 ## Data modeling (star schema)
 
-- **Fact** — `fact_transactions`: 완료된 리셀 거래 1건당 1행 (price, size, date, delivery type, model FK)
-- **Dimensions** — `dim_product` (model no, name, brand, release date, retail price), `dim_size`, `dim_date`, `dim_delivery`
-- **Grain** — 거래 1건
-- **Relationships** — dimension → fact one-to-many; bidirectional filter는 필요한 경우만
+실제 Power BI 모델 기준:
+
+- **Fact** — `fact_sales`: 거래 grain (`SKU`, `Size`, `Size Type`, `Price`, `DeliveryType`, `DateKey`)
+- **Dimensions** — `dim_product` (Model_No, Name_En/Kr, Brand, Category, Color, IsCollab, Release_Date, Retail_Price), `dim_brand`, `dim_date`
+- **Relationships** — `dim_date[DateKey] → fact_sales`, `dim_product → fact_sales`, `dim_brand → dim_product` (및 brand→fact inactive 관계)
+- **What-if / disconnected tables** — `Analysis Period`, `Profit Target %`, `Sales or Qty`, `Signal_Toggles` (BB Touch 등 시그널 기준 토글)
 
 ```text
-dim_product ──┐
-dim_size    ──┼──► fact_transactions
-dim_date    ──┤
-dim_delivery──┘
+dim_brand ──► dim_product ──► fact_sales
+dim_date    ─────────────────► fact_sales
+
+disconnected: Analysis Period · Profit Target % · Sales or Qty · Signal_Toggles
 ```
+
+핵심 measure 예: `%Average Premium`, `Daily Avg Price`, Bollinger / RSI / Trend 기반 buy·sell condition, `KREAM Price Forecast`.
 
 ## Dashboard
 
-게시된 Power BI embed URL로 `src`를 교체하면 이 페이지에 대시보드가 임베드됩니다.
+공개 Publish-to-web 대신 리포트 페이지 구성을 정리합니다. (무료 라이선스 제약)
 
-<PowerBIEmbed
-  src="https://app.powerbi.com/view?r=REPLACE_WITH_YOUR_EMBED_TOKEN"
-  title="Kream sneakers resale market dashboard"
-/>
+1. **Overview** — Total Sales / Quantity / %Average Premium KPI, 일자별 매출, 브랜드별 매출(Jordan · Nike · Adidas 상위), 카테고리·콜라보(`IsCollab`) 슬라이서, Max Premium 하이라이트
+2. **Price trend** — Brand · Product · Size 필터와 Daily Avg Price by Date
+3. **Signals** — Transaction Quantity vs Avg Price, Bollinger Band Analysis, Analysis Period / Profit Target % what-if, Master Buy·Sell 마커
+4. **Premium by brand** — 브랜드별 %Average Premium, Retail vs Resale bubble(수량 크기), 주중/주말 프리미엄 matrix
+5. **Size heatmap** — Size × Brand 프리미엄 heatmap(MM/US/W-MM), DeliveryType별 프리미엄 시계열
 
-대시보드에서 보는 질문:
+관측 포인트(전체 표본 기준):
 
-- 브랜드 / 실루엣별 가격대와 시즌성
-- 사이즈 프리미엄(동일 모델 내 사이즈별 중위 거래가)
-- 배송 유형별 가격·거래량 차이
-- 정가 대비 resale premium 분포 (retail price 가용 시)
+- 표본 규모: 약 **3M** 건, Total Sales 약 **912bn** KRW, %Average Premium 약 **59%**
+- 브랜드 매출 집중: Jordan → Nike → Adidas
+- Jordan의 정가 대비 프리미엄이 특히 큼(브랜드 평균 대비 outlier)
+- 사이즈·배송유형·콜라보 여부로 프리미엄이 갈림
 
-## DAX notes
+## DAX / modeling notes
 
-- dimension 속성을 복제하는 calculated column보다 **relationship** 우선
-- 필터 컨텍스트가 동적으로 유지되어야 하면 로직을 **measures**에 둠
-- 동일 filter context 반복을 피하기 위해 **VAR** 사용
+- dimension 속성은 relationship으로 가져오고, 동적 계산은 measure에 둠
+- `%Average Premium`은 resale price와 `dim_product[Retail_Price]`를 비교
+- Bollinger / RSI / Trend 시그널은 fact measure + what-if 파라미터로 기간·목표 수익률을 조절
+- `Sales or Qty` disconnected table로 동일 비주얼의 값 축을 전환
 
 ```dax
-Median Sale Price =
-MEDIAN ( fact_transactions[price] )
-
-Resale Premium % =
+%Average Premium =
 DIVIDE (
-    [Median Sale Price] - SELECTEDVALUE ( dim_product[retail_price] ),
-    SELECTEDVALUE ( dim_product[retail_price] )
+    [Daily Avg Price] - SELECTEDVALUE ( dim_product[Retail_Price] ),
+    SELECTEDVALUE ( dim_product[Retail_Price] )
 )
 ```
 
@@ -105,10 +100,10 @@ DIVIDE (
 | Layer | Tools |
 | --- | --- |
 | Collection | Python, Playwright (CDP) |
-| Storage / ETL | CSV per SKU·size, merge · validate · Power BI fact export |
-| Analytics | Power BI (star schema, DAX) |
-| Ops | Batch queue, resume on interrupt, push notify on long runs |
+| Storage / ETL | CSV per SKU·size, merge · validate · fact export |
+| Analytics | Power BI Desktop/Service (star schema, DAX, what-if) |
+| Ops | Batch queue, resume, soft-ban backoff, push notify |
 
 ## Results
 
-분석용으로 모델·사이즈 단위 거래 이력을 적재하고, 병합·검증 후 Power BI fact로 연결하는 흐름을 구축했습니다. 대시보드 embed와 브랜드·시즌별 insight 수치는 게시 URL과 표본 SKU 확정 후 이 페이지에 갱신합니다.
+모델×사이즈 거래 이력을 적재하고 `fact_sales` 스타 스키마로 연결한 뒤, 프리미엄·가격 추이·볼린저 시그널 페이지까지 구성된 리포트를 만들었습니다. 공개 임베드는 라이선스 제약으로 생략하고, 포트폴리오에는 모델 구조와 대시보드 구성·insight로 제시합니다.
