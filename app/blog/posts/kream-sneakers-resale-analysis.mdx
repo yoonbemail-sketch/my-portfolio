@@ -1,58 +1,114 @@
 ---
 title: 'Kream 스니커즈 리셀 시장 분석'
 publishedAt: '2026-07-01'
-summary: 'Power BI 대시보드 임베드, 스타 스키마 데이터 모델링, DAX 최적화 경험을 정리하는 분석 프로젝트.'
+summary: '거래내역 수집 파이프라인부터 스타 스키마·Power BI 대시보드까지 이어지는 리셀 시장 분석 프로젝트.'
 ---
 
-Kream 스니커즈 리셀 시장의 가격 신호, 재고 회전, 카테고리 성과를 분석한 Operations Analyst 산출물입니다. 시맨틱 모델과 임베드 가능한 리포팅 구조를 중심으로 작성합니다.
+Kream 스니커즈 리셀 시장의 가격 신호와 사이즈·모델별 거래 패턴을 분석한 Operations Analyst 산출물입니다. 원천 거래 데이터를 안정적으로 적재하고, 분석용 모델로 정규화한 뒤 의사결정용 리포트로 연결하는 end-to-end 흐름에 초점을 둡니다.
+
+소스 코드는 private로 유지합니다. 아래는 설계와 분석 관점의 요약입니다.
+
+## Problem
+
+리셀 의사결정에는 “지금 이 모델·사이즈가 얼마에, 얼마나 자주 거래되는지”가 필요합니다. 화면에서 보이는 최근 몇 건만으로는 시즌성, 사이즈 프리미엄, 배송 유형별 가격 차이를 보기 어렵습니다.
+
+필요한 것:
+
+1. 모델·사이즈 단위의 장기 거래 이력
+2. 재수집·중단 후에도 이어서 적재할 수 있는 파이프라인
+3. Power BI에서 슬라이스할 수 있는 분석용 fact / dimension 구조
+
+## Pipeline overview
+
+```text
+Product page (model / size metadata)
+        │
+        ▼
+Trade history collection (per size)
+        │
+        ▼
+CSV per model · size  (+ resume / merge)
+        │
+        ▼
+Validate · normalize dates · build sales fact
+        │
+        ▼
+Star schema in Power BI
+        │
+        ▼
+Dashboard (price · volume · seasonality)
+```
+
+수집은 Playwright 기반으로 브라우저 세션에 연결해 모델 번호·사이즈별 거래 행(사이즈, 가격, 날짜, 배송 유형)을 저장합니다. 배치 큐로 여러 SKU를 순차 처리하고, 사이즈별 파일을 병합한 뒤 Power BI용 fact 테이블로 합칩니다.
+
+## Data quality rules
+
+모델에 넣기 전 적용하는 규칙:
+
+| Rule | Why |
+| --- | --- |
+| Size prefix validation | 스크롤 중 다른 사이즈 행이 섞이지 않도록 검증 |
+| Completion ratio (≥ 90%) | 기대 거래량 대비 충분히 모였는지 판정 |
+| Relative date → absolute | `3시간 전` / `2일 전` 등을 `YY/MM/DD`로 정규화 |
+| Dedup on merge / update | 재수집 시 중복 거래 제거, 신규분만 append |
+| Master product cache | `sneakers_info`에 브랜드·사이즈·발매일·정가를 캐시해 반복 분석 비용 절감 |
+
+## Data modeling (star schema)
+
+- **Fact** — `fact_transactions`: 완료된 리셀 거래 1건당 1행 (price, size, date, delivery type, model FK)
+- **Dimensions** — `dim_product` (model no, name, brand, release date, retail price), `dim_size`, `dim_date`, `dim_delivery`
+- **Grain** — 거래 1건
+- **Relationships** — dimension → fact one-to-many; bidirectional filter는 필요한 경우만
+
+```text
+dim_product ──┐
+dim_size    ──┼──► fact_transactions
+dim_date    ──┤
+dim_delivery──┘
+```
 
 ## Dashboard
 
-아래 `src`를 게시된 Power BI embed URL로 교체하세요.
+게시된 Power BI embed URL로 `src`를 교체하면 이 페이지에 대시보드가 임베드됩니다.
 
 <PowerBIEmbed
   src="https://app.powerbi.com/view?r=REPLACE_WITH_YOUR_EMBED_TOKEN"
   title="Kream sneakers resale market dashboard"
 />
 
-## Data modeling (star schema)
+대시보드에서 보는 질문:
 
-모델 설계를 기록하는 섹션입니다.
+- 브랜드 / 실루엣별 가격대와 시즌성
+- 사이즈 프리미엄(동일 모델 내 사이즈별 중위 거래가)
+- 배송 유형별 가격·거래량 차이
+- 정가 대비 resale premium 분포 (retail price 가용 시)
 
-- **Fact table** — 예: `fact_transactions` (sale price, quantity, timestamp, foreign keys)
-- **Dimensions** — `dim_product`, `dim_brand`, `dim_seller`, `dim_date`, `dim_category`
-- **Grain** — 완료된 리셀 거래 1건당 1행 (또는 선택한 grain)
-- **Relationships** — dimension → fact 의 one-to-many; bidirectional filter는 필요한 경우만
+## DAX notes
 
-```text
-dim_brand ──┐
-dim_product─┼──► fact_transactions
-dim_date  ──┤
-dim_seller──┘
-```
-
-## DAX optimization
-
-측정값 설계와 성능 관련 메모:
-
-- dimension 속성을 복제하는 calculated column보다 **star-schema relationship** 우선
-- 필터가 동적으로 유지되어야 하면 로직을 **measures**에 두고 row-context calculated column은 최소화
-- 동일 filter context 반복을 피하기 위해 **variables** (`VAR`) 사용
-- Performance Analyzer / DAX Studio로 storage engine vs formula engine 시간 검증
-
-예시 measure:
+- dimension 속성을 복제하는 calculated column보다 **relationship** 우선
+- 필터 컨텍스트가 동적으로 유지되어야 하면 로직을 **measures**에 둠
+- 동일 filter context 반복을 피하기 위해 **VAR** 사용
 
 ```dax
-Total GMV =
-SUMX (
-    fact_transactions,
-    fact_transactions[sale_price] * fact_transactions[quantity]
+Median Sale Price =
+MEDIAN ( fact_transactions[price] )
+
+Resale Premium % =
+DIVIDE (
+    [Median Sale Price] - SELECTEDVALUE ( dim_product[retail_price] ),
+    SELECTEDVALUE ( dim_product[retail_price] )
 )
 ```
 
-## Insights (draft)
+## Stack
 
-- [ ] 브랜드 / 실루엣별 가격대와 시즌성
-- [ ] Sell-through velocity 및 days-to-sale 분포
-- [ ] 리테일 대비 margin / spread (가용 시)
-- [ ] 모델 적재 전 적용한 데이터 품질 규칙
+| Layer | Tools |
+| --- | --- |
+| Collection | Python, Playwright (CDP) |
+| Storage / ETL | CSV per SKU·size, merge · validate · Power BI fact export |
+| Analytics | Power BI (star schema, DAX) |
+| Ops | Batch queue, resume on interrupt, push notify on long runs |
+
+## Results
+
+분석용으로 모델·사이즈 단위 거래 이력을 적재하고, 병합·검증 후 Power BI fact로 연결하는 흐름을 구축했습니다. 대시보드 embed와 브랜드·시즌별 insight 수치는 게시 URL과 표본 SKU 확정 후 이 페이지에 갱신합니다.
