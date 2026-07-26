@@ -22,6 +22,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Live
+
+https://my-portfolio-omega-mocha-79.vercel.app/
+
 ## Deploy
 
 Import this repository in [Vercel](https://vercel.com/new). Framework preset: Next.js.
