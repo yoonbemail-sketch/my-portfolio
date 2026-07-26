@@ -10,7 +10,7 @@ export default async function Page() {
   return (
     <section>
       <h1 className="mb-2 text-3xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-        Lee
+        Yoon Lee
       </h1>
       <p className="mb-6 text-neutral-600 dark:text-neutral-400">{t.home.role}</p>
       <p className="mb-4 leading-7 text-neutral-800 dark:text-neutral-200">

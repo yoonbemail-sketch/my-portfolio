@@ -92,7 +92,7 @@ export default async function Blog(props: {
             inLanguage: locale === 'ko' ? 'ko-KR' : 'en-US',
             author: {
               '@type': 'Person',
-              name: 'Lee',
+              name: 'Yoon Lee',
             },
           }),
         }}

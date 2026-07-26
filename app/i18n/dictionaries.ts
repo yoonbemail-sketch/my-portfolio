@@ -58,7 +58,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       description: '대시보드, 스키마, 프로세스 노트를 담은 케이스 라이트업입니다.',
     },
     footer: {
-      copyright: 'Lee · Operations Analyst',
+      copyright: 'Yoon Lee · Operations Analyst',
     },
     notFound: {
       title: '404 - 페이지를 찾을 수 없습니다',
@@ -94,7 +94,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
         'Case write-ups with room for dashboards, schemas, and process notes.',
     },
     footer: {
-      copyright: 'Lee · Operations Analyst',
+      copyright: 'Yoon Lee · Operations Analyst',
     },
     notFound: {
       title: '404 - Page Not Found',

@@ -27,7 +27,7 @@ export async function GET() {
   const rssFeed = `<?xml version="1.0" encoding="UTF-8" ?>
   <rss version="2.0">
     <channel>
-        <title>Lee · Operations Analyst</title>
+        <title>Yoon Lee · Operations Analyst</title>
         <link>${baseUrl}</link>
         <description>Selected projects and case write-ups</description>
         ${itemsXml}

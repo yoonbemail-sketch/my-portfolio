@@ -12,17 +12,17 @@ import { getLocale } from './i18n/get-locale'
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: 'Lee · Operations Analyst',
-    template: '%s · Lee',
+    default: 'Yoon Lee · Operations Analyst',
+    template: '%s · Yoon Lee',
   },
   description:
     'Portfolio of an Operations Analyst specializing in mathematical optimization, Power BI, and process improvement.',
   openGraph: {
-    title: 'Lee · Operations Analyst',
+    title: 'Yoon Lee · Operations Analyst',
     description:
       'Projects in analytics, automation pipelines, and backend data design.',
     url: baseUrl,
-    siteName: 'Lee · Portfolio',
+    siteName: 'Yoon Lee · Portfolio',
     locale: 'en_US',
     type: 'website',
   },
