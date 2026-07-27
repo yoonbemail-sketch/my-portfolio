@@ -338,6 +338,12 @@ function assignCalls() {
     }
 }
 
+function clearAssignment(passengerId) {
+    for (const e of elevators) {
+        e.assigned = e.assigned.filter(p => p.id !== passengerId);
+    }
+}
+
 function openDoors(elev) {
     elev.doorTicks = doorDwell;
     elev.state = 'DOORS';
@@ -361,24 +367,13 @@ function openDoors(elev) {
     }
     elev.passengers = staying;
 
+    // Any same-direction waiter at this floor boards if there is room —
+    // even if they were assigned to another car (real hall behavior).
     const canBoard = [];
     const seen = new Set();
-
-    elev.assigned = elev.assigned.filter(p => {
-        if (
-            p.origin === elev.floor &&
-            p.state === 'WAITING' &&
-            !seen.has(p.id) &&
-            canBoardPassenger(elev, p)
-        ) {
-            canBoard.push(p);
-            seen.add(p.id);
-            return false;
-        }
-        return true;
-    });
-
-    for (const p of unassignedWaiting()) {
+    const here = waiting.filter(p => p.origin === elev.floor && p.state === 'WAITING');
+    here.sort((a, b) => a.arriveTick - b.arriveTick);
+    for (const p of here) {
         if (seen.has(p.id)) continue;
         if (!canBoardPassenger(elev, p)) continue;
         if (elev.passengers.length + canBoard.length >= capacity) break;
@@ -387,15 +382,15 @@ function openDoors(elev) {
     }
 
     for (const p of canBoard) {
-        if (elev.passengers.length >= capacity) {
-            elev.assigned.push(p);
-            continue;
-        }
+        clearAssignment(p.id);
         waiting = waiting.filter(w => w.id !== p.id);
         p.state = 'RIDING';
         p.boardTick = tickCount;
         elev.passengers.push(p);
     }
+
+    // Drop stale self-assignments left at this floor (opposite direction / full)
+    elev.assigned = elev.assigned.filter(p => !(p.origin === elev.floor && p.state === 'WAITING'));
 
     elev.dir = chooseDirection(elev);
 }
