@@ -1,9 +1,17 @@
 /**
- * Elevator Parking Simulator — apartment building default
- * Compare idle-car parking strategies under residential traffic.
+ * Elevator Parking Simulator — apartment building
+ * Same passenger scenario, different parking strategies.
  */
 
 const LOBBY = 1;
+const STRATEGIES = ['stay', 'lobby', 'mid', 'spread', 'demand'];
+const STRATEGY_LABELS = {
+    stay: 'Stay',
+    lobby: 'Lobby',
+    mid: 'Mid',
+    spread: 'Spread',
+    demand: 'Demand',
+};
 
 let floors = 20;
 let elevatorCount = 4;
@@ -11,34 +19,42 @@ let capacity = 8;
 let arrivalRate = 0.15;
 let peakMode = 'evening';
 let parkingStrategy = 'stay';
-let interfloorRate = 0.10; // share of trips that are floor↔floor (not via lobby)
+let interfloorRate = 0.10;
 let doorDwell = 2;
 let targetPassengers = 80;
 let tickDelay = 100;
+let scenarioSeed = 42;
 
 let tickCount = 0;
 let elevators = [];
-let waiting = []; // passengers waiting in halls
+let waiting = [];
 let completedWaits = [];
 let completedRides = [];
 let emptyTravel = 0;
 let completedCount = 0;
-let callHeat = {}; // floor -> recent call weight
+let callHeat = {};
 let isRunning = false;
 let intervalId = null;
 let nextPassengerId = 1;
 
+/** Pre-generated arrivals: { tick, origin, dest }[] — shared across strategy runs */
+let scenario = [];
+let scenarioCursor = 0;
+let scenarioKey = '';
+
+let rng = null;
+
 const buildingEl = document.getElementById('building');
 
 class Passenger {
-    constructor(origin, dest) {
+    constructor(origin, dest, arriveTick) {
         this.id = nextPassengerId++;
         this.origin = origin;
         this.dest = dest;
         this.dir = dest > origin ? 1 : -1;
-        this.arriveTick = tickCount;
+        this.arriveTick = arriveTick;
         this.boardTick = null;
-        this.state = 'WAITING'; // WAITING | RIDING | DONE
+        this.state = 'WAITING';
     }
 }
 
@@ -47,21 +63,17 @@ class Elevator {
         this.id = id;
         this.floor = LOBBY;
         this.homeFloor = homeFloor;
-        this.dir = 0; // -1, 0, 1
+        this.dir = 0;
         this.passengers = [];
-        this.targets = new Set(); // floors to visit (car calls + assigned halls)
-        this.assigned = []; // waiting passengers assigned to this car
+        this.targets = new Set();
+        this.assigned = [];
         this.doorTicks = 0;
-        this.state = 'IDLE'; // IDLE | MOVING | DOORS | PARKING
+        this.state = 'IDLE';
         this.parkingTarget = null;
     }
 
     load() {
         return this.passengers.length;
-    }
-
-    isEmpty() {
-        return this.passengers.length === 0 && this.assigned.length === 0 && this.targets.size === 0;
     }
 }
 
@@ -69,55 +81,87 @@ function clamp(n, a, b) {
     return Math.max(a, Math.min(b, n));
 }
 
-function randInt(a, b) {
-    return a + Math.floor(Math.random() * (b - a + 1));
+function mulberry32(seed) {
+    let t = seed >>> 0;
+    return function () {
+        t += 0x6d2b79f5;
+        let r = Math.imul(t ^ (t >>> 15), 1 | t);
+        r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+        return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
 }
 
-/** Random residential floor other than `avoid` (2..floors). */
+function rand() {
+    return rng();
+}
+
+function randInt(a, b) {
+    return a + Math.floor(rand() * (b - a + 1));
+}
+
 function randomUpper(avoid) {
     if (floors < 3) return avoid === 2 ? LOBBY : 2;
     let f = avoid;
     for (let i = 0; i < 24 && f === avoid; i++) {
         f = randInt(2, floors);
     }
-    if (f === avoid) f = avoid === 2 ? 3 : 2;
+    if (f === avoid) f = avoid === 2 ? Math.min(3, floors) : 2;
     return f;
 }
 
-/**
- * Apartment OD:
- * - Upper floors mostly go to lobby (leave building)
- * - Lobby mostly goes to a residential floor (come home)
- * - `interfloorRate` allows upper↔upper visits
- */
 function pickDest(origin) {
-    if (origin === LOBBY) {
-        return randomUpper(LOBBY);
-    }
-    // origin is residential
-    if (Math.random() < interfloorRate) {
-        return randomUpper(origin);
-    }
+    if (origin === LOBBY) return randomUpper(LOBBY);
+    if (rand() < interfloorRate) return randomUpper(origin);
     return LOBBY;
 }
 
-function spawnPassenger() {
-    let origin;
+function pickOrigin() {
     if (peakMode === 'morning') {
-        // Leaving for work/school: mostly upper → lobby
-        origin = Math.random() < 0.9 ? randInt(2, floors) : LOBBY;
-    } else if (peakMode === 'evening') {
-        // Coming home: mostly lobby → upper
-        origin = Math.random() < 0.9 ? LOBBY : randInt(2, floors);
-    } else {
-        // Midday / off-peak: both directions, slight lobby bias from entries
-        origin = Math.random() < 0.45 ? LOBBY : randInt(2, floors);
+        return rand() < 0.9 ? randInt(2, floors) : LOBBY;
     }
+    if (peakMode === 'evening') {
+        return rand() < 0.9 ? LOBBY : randInt(2, floors);
+    }
+    return rand() < 0.45 ? LOBBY : randInt(2, floors);
+}
 
-    const dest = pickDest(origin);
-    const p = new Passenger(origin, dest);
-    waiting.push(p);
-    callHeat[origin] = (callHeat[origin] || 0) + 3;
+function trafficScenarioKey() {
+    return [
+        scenarioSeed,
+        floors,
+        peakMode,
+        arrivalRate,
+        interfloorRate,
+        targetPassengers,
+    ].join('|');
+}
+
+function ensureScenario(force) {
+    const key = trafficScenarioKey();
+    if (!force && scenario.length && key === scenarioKey) return;
+    rng = mulberry32(scenarioSeed);
+    scenario = [];
+    let tick = 0;
+    const maxTicks = Math.max(5000, Math.ceil(targetPassengers / Math.max(0.01, arrivalRate)) * 4);
+    while (scenario.length < targetPassengers && tick < maxTicks) {
+        tick++;
+        if (rand() < arrivalRate) {
+            const origin = pickOrigin();
+            const dest = pickDest(origin);
+            scenario.push({ tick, origin, dest });
+        }
+    }
+    scenarioKey = key;
+    updateScenarioLabel();
+}
+
+function releaseArrivals() {
+    while (scenarioCursor < scenario.length && scenario[scenarioCursor].tick <= tickCount) {
+        const e = scenario[scenarioCursor++];
+        const p = new Passenger(e.origin, e.dest, e.tick);
+        waiting.push(p);
+        callHeat[e.origin] = (callHeat[e.origin] || 0) + 3;
+    }
 }
 
 function decayHeat() {
@@ -146,7 +190,6 @@ function parkingFloorFor(elev) {
             let bestScore = -1;
             for (let f = 1; f <= floors; f++) {
                 const heat = callHeat[f] || 0;
-                // prefer hot floors that aren't already covered by another idle/parking car nearby
                 let coverage = 0;
                 for (const other of elevators) {
                     if (other.id === elev.id) continue;
@@ -161,7 +204,6 @@ function parkingFloorFor(elev) {
                     best = f;
                 }
             }
-            // if no heat yet, fall back to spread
             if (bestScore <= 0) return elev.homeFloor;
             return best;
         }
@@ -180,13 +222,11 @@ function unassignedWaiting() {
 }
 
 function costToServe(elev, passenger) {
-    // Approximate: distance + capacity/load + direction mismatch
     const dist = Math.abs(elev.floor - passenger.origin);
     const loadPenalty = elev.load() * 2;
     const doorPenalty = elev.doorTicks > 0 ? 1 : 0;
     let dirPenalty = 0;
     if (elev.dir !== 0 && elev.passengers.length > 0) {
-        // prefer continuing same direction if passenger aligns
         const goingThatWay =
             (elev.dir === 1 && passenger.origin >= elev.floor) ||
             (elev.dir === -1 && passenger.origin <= elev.floor);
@@ -194,14 +234,12 @@ function costToServe(elev, passenger) {
         else if (passenger.dir !== elev.dir) dirPenalty = 3;
     }
     if (elev.load() >= capacity) return Infinity;
-    // parking cars are freer
     const busyPenalty = elev.state === 'PARKING' || elev.state === 'IDLE' ? 0 : 2;
     return dist + loadPenalty + doorPenalty + dirPenalty + busyPenalty;
 }
 
 function assignCalls() {
     const pool = unassignedWaiting();
-    // nearest-car with capacity, one assignment pass per tick (stable)
     pool.sort((a, b) => a.arriveTick - b.arriveTick);
 
     for (const p of pool) {
@@ -232,7 +270,6 @@ function nextTarget(elev) {
     if (elev.targets.size === 0) return null;
     const list = [...elev.targets];
 
-    // continue in direction when possible
     if (elev.dir === 1) {
         const ahead = list.filter(f => f >= elev.floor).sort((a, b) => a - b);
         if (ahead.length) return ahead[0];
@@ -243,7 +280,6 @@ function nextTarget(elev) {
         if (ahead.length) return ahead[0];
         return list.sort((a, b) => a - b)[0];
     }
-    // pick nearest
     list.sort((a, b) => Math.abs(a - elev.floor) - Math.abs(b - elev.floor));
     return list[0];
 }
@@ -253,7 +289,6 @@ function openDoors(elev) {
     elev.state = 'DOORS';
     elev.targets.delete(elev.floor);
 
-    // alight
     const staying = [];
     for (const p of elev.passengers) {
         if (p.dest === elev.floor) {
@@ -267,7 +302,6 @@ function openDoors(elev) {
     }
     elev.passengers = staying;
 
-    // board assigned (and opportunistic same-dir waiters if space)
     const canBoard = [];
     elev.assigned = elev.assigned.filter(p => {
         if (p.origin === elev.floor && p.state === 'WAITING') {
@@ -277,29 +311,22 @@ function openDoors(elev) {
         return true;
     });
 
-    // also pick up unassigned at this floor if space and direction ok
     for (const p of unassignedWaiting()) {
         if (p.origin !== elev.floor) continue;
         if (elev.passengers.length + canBoard.length >= capacity) break;
         let ok = true;
         if (elev.passengers.length > 0 && elev.dir !== 0 && p.dir !== elev.dir) {
-            // allow if car has no committed opposite direction yet
             ok = false;
         }
-        if (ok) {
-            canBoard.push(p);
-            // remove from others' assigned if any — shouldn't be
-        }
+        if (ok) canBoard.push(p);
     }
 
     for (const p of canBoard) {
         if (elev.passengers.length >= capacity) {
-            // put back as waiting assignment
             elev.assigned.push(p);
             elev.targets.add(p.origin);
             continue;
         }
-        // remove from global waiting
         waiting = waiting.filter(w => w.id !== p.id);
         p.state = 'RIDING';
         p.boardTick = tickCount;
@@ -307,7 +334,6 @@ function openDoors(elev) {
         elev.targets.add(p.dest);
     }
 
-    // update direction hint from remaining passengers
     if (elev.passengers.length) {
         const up = elev.passengers.filter(p => p.dest > elev.floor).length;
         const down = elev.passengers.filter(p => p.dest < elev.floor).length;
@@ -322,7 +348,6 @@ function stepElevator(elev) {
             if (elev.targets.size > 0 || elev.assigned.length > 0) {
                 elev.state = 'MOVING';
             } else if (elev.passengers.length === 0) {
-                // go park
                 const park = parkingFloorFor(elev);
                 if (park !== elev.floor && parkingStrategy !== 'stay') {
                     elev.parkingTarget = park;
@@ -340,7 +365,6 @@ function stepElevator(elev) {
         return;
     }
 
-    // stop if we should serve this floor
     const shouldStop =
         elev.passengers.some(p => p.dest === elev.floor) ||
         elev.assigned.some(p => p.origin === elev.floor) ||
@@ -360,7 +384,6 @@ function stepElevator(elev) {
             elev.dir = 0;
             return;
         }
-        // if a call got assigned, abandon parking
         if (elev.assigned.length || elev.targets.size) {
             elev.parkingTarget = null;
             elev.state = 'MOVING';
@@ -370,15 +393,13 @@ function stepElevator(elev) {
             elev.parkingTarget = null;
             return;
         } else {
-            const next = elev.floor + (elev.parkingTarget > elev.floor ? 1 : -1);
-            elev.floor = next;
+            elev.floor += elev.parkingTarget > elev.floor ? 1 : -1;
             emptyTravel++;
             return;
         }
     }
 
     if (elev.state === 'IDLE') {
-        // maybe start parking if strategy wants a different floor
         const park = parkingFloorFor(elev);
         if (park !== elev.floor && parkingStrategy !== 'stay') {
             elev.parkingTarget = park;
@@ -388,7 +409,6 @@ function stepElevator(elev) {
         return;
     }
 
-    // MOVING
     const target = nextTarget(elev);
     if (target == null) {
         if (elev.passengers.length === 0) {
@@ -407,38 +427,26 @@ function stepElevator(elev) {
     elev.floor += elev.dir;
     if (elev.passengers.length === 0) emptyTravel++;
 
-    // after move, check stop
     const stopNow =
         elev.passengers.some(p => p.dest === elev.floor) ||
         elev.assigned.some(p => p.origin === elev.floor);
-    if (stopNow) {
-        openDoors(elev);
-    }
+    if (stopNow) openDoors(elev);
+}
+
+function simTick() {
+    tickCount++;
+    releaseArrivals();
+    decayHeat();
+    assignCalls();
+    for (const elev of elevators) stepElevator(elev);
+    waiting = waiting.filter(p => p.state === 'WAITING');
 }
 
 function gameLoop() {
-    tickCount++;
-
-    if (Math.random() < arrivalRate) {
-        spawnPassenger();
-    }
-
-    decayHeat();
-    assignCalls();
-
-    for (const elev of elevators) {
-        stepElevator(elev);
-    }
-
-    // keep waiting list clean of boarded
-    waiting = waiting.filter(p => p.state === 'WAITING');
-
+    simTick();
     render();
     updateDashboard();
-
-    if (completedCount >= targetPassengers) {
-        stopSim();
-    }
+    if (completedCount >= targetPassengers) stopSim();
 }
 
 function buildElevators() {
@@ -448,11 +456,23 @@ function buildElevators() {
     }
 }
 
+function resetRuntimeState() {
+    tickCount = 0;
+    waiting = [];
+    completedWaits = [];
+    completedRides = [];
+    emptyTravel = 0;
+    completedCount = 0;
+    callHeat = {};
+    nextPassengerId = 1;
+    scenarioCursor = 0;
+    buildElevators();
+}
+
 function initBuildingDOM() {
     buildingEl.style.setProperty('--shaft-count', elevatorCount);
     buildingEl.innerHTML = '';
 
-    // headers
     const corner = document.createElement('div');
     corner.className = 'corner-header';
     corner.textContent = 'Fl';
@@ -470,7 +490,6 @@ function initBuildingDOM() {
     hallH.textContent = 'Hall';
     buildingEl.appendChild(hallH);
 
-    // floors top -> bottom (highest first)
     for (let f = floors; f >= 1; f--) {
         const label = document.createElement('div');
         label.className = 'floor-label' + (f === LOBBY ? ' lobby' : '');
@@ -494,7 +513,6 @@ function initBuildingDOM() {
 }
 
 function render() {
-    // clear cars and hall pax
     buildingEl.querySelectorAll('.elevator-car').forEach(el => el.remove());
     buildingEl.querySelectorAll('.shaft-cell').forEach(el => el.classList.remove('has-car'));
     buildingEl.querySelectorAll('.hall-cell').forEach(el => { el.innerHTML = ''; });
@@ -512,11 +530,8 @@ function render() {
         car.textContent = String(elev.load());
         car.title = `E${elev.id + 1} ${elev.state} @${elev.floor}`;
         cell.appendChild(car);
-
-        // show riding as dots in car? capacity number is enough; also mark in hall? no
     }
 
-    // waiting passengers by floor
     const byFloor = {};
     for (const p of waiting) {
         if (!byFloor[p.origin]) byFloor[p.origin] = [];
@@ -546,15 +561,30 @@ function avg(arr) {
     return arr.reduce((a, b) => a + b, 0) / arr.length;
 }
 
+function snapshotMetrics() {
+    return {
+        avgWait: avg(completedWaits),
+        maxWait: completedWaits.length ? Math.max(...completedWaits) : 0,
+        emptyTravel,
+        ticks: tickCount,
+        completed: completedCount,
+    };
+}
+
 function updateDashboard() {
-    const aw = avg(completedWaits);
-    const mw = completedWaits.length ? Math.max(...completedWaits) : 0;
-    document.getElementById('stat-avg-wait').textContent = aw ? aw.toFixed(1) : '0';
-    document.getElementById('stat-max-wait').textContent = String(mw);
-    document.getElementById('stat-completed').textContent = `${completedCount} / ${targetPassengers}`;
-    document.getElementById('stat-empty').textContent = String(emptyTravel);
-    const pct = Math.min(100, (completedCount / targetPassengers) * 100);
-    document.getElementById('progress-fill').style.width = `${pct}%`;
+    const m = snapshotMetrics();
+    document.getElementById('stat-avg-wait').textContent = m.avgWait ? m.avgWait.toFixed(1) : '0';
+    document.getElementById('stat-max-wait').textContent = String(m.maxWait);
+    document.getElementById('stat-completed').textContent = `${m.completed} / ${targetPassengers}`;
+    document.getElementById('stat-empty').textContent = String(m.emptyTravel);
+    document.getElementById('progress-fill').style.width =
+        `${Math.min(100, (m.completed / targetPassengers) * 100)}%`;
+}
+
+function updateScenarioLabel() {
+    const el = document.getElementById('scenario-label');
+    if (!el) return;
+    el.textContent = `Scenario seed ${scenarioSeed} · ${scenario.length} trips`;
 }
 
 function readControls() {
@@ -567,22 +597,17 @@ function readControls() {
     targetPassengers = Number(document.getElementById('target-range').value);
     parkingStrategy = document.getElementById('strategy-select').value;
     peakMode = document.getElementById('peak-select').value;
+    const seedInput = document.getElementById('seed-input');
+    scenarioSeed = Number(seedInput.value) || 1;
     const tps = Number(document.getElementById('sim-speed').value);
     tickDelay = 1000 / tps;
 }
 
-function resetSimulation() {
+function resetSimulation(opts = {}) {
     stopSim();
     readControls();
-    tickCount = 0;
-    waiting = [];
-    completedWaits = [];
-    completedRides = [];
-    emptyTravel = 0;
-    completedCount = 0;
-    callHeat = {};
-    nextPassengerId = 1;
-    buildElevators();
+    ensureScenario(Boolean(opts.newScenario));
+    resetRuntimeState();
     initBuildingDOM();
     render();
     updateDashboard();
@@ -593,6 +618,14 @@ function resetSimulation() {
 function startSim() {
     if (isRunning) return;
     readControls();
+    ensureScenario(false);
+    // If starting fresh after finish, replay same scenario
+    if (completedCount >= targetPassengers || tickCount === 0) {
+        resetRuntimeState();
+        if (!buildingEl.children.length) initBuildingDOM();
+        render();
+        updateDashboard();
+    }
     isRunning = true;
     intervalId = setInterval(gameLoop, tickDelay);
     document.getElementById('btn-play').disabled = true;
@@ -609,7 +642,54 @@ function stopSim() {
     document.getElementById('btn-pause').disabled = true;
 }
 
-// Control bindings
+/** Run one strategy against the current scenario with no animation. */
+function runHeadless(strategy) {
+    parkingStrategy = strategy;
+    resetRuntimeState();
+    const guard = Math.max(20000, scenario[scenario.length - 1]?.tick * 20 || 20000);
+    while (completedCount < targetPassengers && tickCount < guard) {
+        simTick();
+    }
+    return { strategy, ...snapshotMetrics() };
+}
+
+function compareStrategies() {
+    stopSim();
+    readControls();
+    ensureScenario(false);
+
+    const savedStrategy = parkingStrategy;
+    const results = STRATEGIES.map(runHeadless);
+
+    // Restore selected strategy and visual reset for replay
+    document.getElementById('strategy-select').value = savedStrategy;
+    parkingStrategy = savedStrategy;
+    resetRuntimeState();
+    initBuildingDOM();
+    render();
+    updateDashboard();
+
+    const bestWait = Math.min(...results.map(r => r.avgWait || Infinity));
+    const bestEmpty = Math.min(...results.map(r => r.emptyTravel));
+
+    const tbody = document.querySelector('#compare-table tbody');
+    tbody.innerHTML = '';
+    for (const r of results) {
+        const tr = document.createElement('tr');
+        if (r.avgWait === bestWait) tr.classList.add('best-wait');
+        tr.innerHTML = `
+            <td>${STRATEGY_LABELS[r.strategy]}</td>
+            <td class="num">${r.avgWait.toFixed(1)}</td>
+            <td class="num">${r.maxWait}</td>
+            <td class="num ${r.emptyTravel === bestEmpty ? 'best-empty' : ''}">${r.emptyTravel}</td>
+            <td class="num">${r.ticks}</td>
+            <td class="num">${r.completed}</td>
+        `;
+        tbody.appendChild(tr);
+    }
+    document.getElementById('compare-panel').hidden = false;
+}
+
 function bindRange(id, valId, fmt) {
     const el = document.getElementById(id);
     const val = document.getElementById(valId);
@@ -628,19 +708,29 @@ bindRange('target-range', 'target-val', v => v);
 bindRange('sim-speed', 'sim-speed-val', v => `${v} TPS`);
 
 document.getElementById('btn-play').addEventListener('click', () => {
-    // if structural params changed while idle, rebuild
     const needRebuild =
         floors !== Number(document.getElementById('floors-range').value) ||
         elevatorCount !== Number(document.getElementById('elevators-range').value);
-    if (needRebuild && completedCount === 0 && tickCount === 0) {
-        resetSimulation();
-    }
     readControls();
+    if (needRebuild) {
+        ensureScenario(false);
+        resetRuntimeState();
+        initBuildingDOM();
+        render();
+        updateDashboard();
+    }
     startSim();
 });
 
 document.getElementById('btn-pause').addEventListener('click', stopSim);
-document.getElementById('btn-reset').addEventListener('click', resetSimulation);
+document.getElementById('btn-reset').addEventListener('click', () => resetSimulation({ newScenario: false }));
+document.getElementById('btn-new-scenario').addEventListener('click', () => {
+    const next = (Math.floor(Math.random() * 90000) + 10000);
+    document.getElementById('seed-input').value = String(next);
+    scenarioSeed = next;
+    resetSimulation({ newScenario: true });
+});
+document.getElementById('btn-compare').addEventListener('click', compareStrategies);
 
 document.getElementById('strategy-select').addEventListener('change', () => {
     parkingStrategy = document.getElementById('strategy-select').value;
@@ -648,6 +738,11 @@ document.getElementById('strategy-select').addEventListener('change', () => {
 
 document.getElementById('peak-select').addEventListener('change', () => {
     peakMode = document.getElementById('peak-select').value;
+});
+
+document.getElementById('seed-input').addEventListener('change', () => {
+    scenarioSeed = Number(document.getElementById('seed-input').value) || 1;
+    resetSimulation({ newScenario: true });
 });
 
 document.getElementById('sim-speed').addEventListener('input', () => {
@@ -659,10 +754,16 @@ document.getElementById('sim-speed').addEventListener('input', () => {
     }
 });
 
-// Rebuild layout when floors/elevators change (only when not mid-run, or force reset)
-['floors-range', 'elevators-range'].forEach(id => {
+// Traffic inputs invalidate scenario on next ensure
+['floors-range', 'elevators-range', 'arrival-range', 'interfloor-range', 'target-range', 'peak-select'].forEach(id => {
     document.getElementById(id).addEventListener('change', () => {
-        if (!isRunning) resetSimulation();
+        if (!isRunning) {
+            readControls();
+            // elevators-only change shouldn't rebuild passenger OD — but floors/arrival/peak/interfloor/target should
+            const trafficChanged = id !== 'elevators-range';
+            if (trafficChanged) scenarioKey = '';
+            resetSimulation({ newScenario: trafficChanged });
+        }
     });
 });
 
@@ -670,7 +771,6 @@ document.getElementById('mobile-toggle').addEventListener('click', () => {
     document.getElementById('sim-controls').classList.toggle('open');
 });
 
-// Match portfolio embed chrome when framed or ?embed=1
 try {
     const params = new URLSearchParams(window.location.search);
     if (params.get('embed') === '1' || window.self !== window.top) {
@@ -680,4 +780,4 @@ try {
     document.documentElement.classList.add('embed');
 }
 
-resetSimulation();
+resetSimulation({ newScenario: true });
