@@ -238,6 +238,75 @@ function costToServe(elev, passenger) {
     return dist + loadPenalty + doorPenalty + dirPenalty + busyPenalty;
 }
 
+function syncTargets(elev) {
+    elev.targets.clear();
+    for (const p of elev.passengers) elev.targets.add(p.dest);
+    for (const p of elev.assigned) elev.targets.add(p.origin);
+}
+
+function getStopFloors(elev) {
+    const stops = new Set();
+    for (const p of elev.passengers) stops.add(p.dest);
+    for (const p of elev.assigned) stops.add(p.origin);
+    return stops;
+}
+
+function hasStopsAbove(elev) {
+    for (const f of getStopFloors(elev)) {
+        if (f > elev.floor) return true;
+    }
+    return false;
+}
+
+function hasStopsBelow(elev) {
+    for (const f of getStopFloors(elev)) {
+        if (f < elev.floor) return true;
+    }
+    return false;
+}
+
+function hasWork(elev) {
+    return elev.passengers.length > 0 || elev.assigned.length > 0;
+}
+
+/** SCAN-style direction: finish all stops above before reversing down. */
+function chooseDirection(elev) {
+    const above = hasStopsAbove(elev);
+    const below = hasStopsBelow(elev);
+    if (!above && !below) return 0;
+    if (elev.dir === 1 && above) return 1;
+    if (elev.dir === -1 && below) return -1;
+    if (above && !below) return 1;
+    if (below && !above) return -1;
+    // Both sides: prefer continuing, else go toward more stops
+    if (elev.dir === 1 || elev.dir === -1) return elev.dir;
+    const stops = getStopFloors(elev);
+    let up = 0;
+    let down = 0;
+    for (const f of stops) {
+        if (f > elev.floor) up++;
+        else if (f < elev.floor) down++;
+    }
+    return up >= down ? 1 : -1;
+}
+
+function shouldStopAtFloor(elev) {
+    const f = elev.floor;
+    if (elev.passengers.some(p => p.dest === f)) return true;
+    if (elev.assigned.some(p => p.origin === f)) return true;
+    return false;
+}
+
+function canBoardPassenger(elev, passenger) {
+    if (passenger.origin !== elev.floor) return false;
+    if (elev.passengers.length + elev.assigned.filter(p => p.origin === elev.floor).length >= capacity) {
+        return false;
+    }
+    if (elev.dir === 0) return true;
+    if (elev.dir === 1) return passenger.dest > elev.floor;
+    return passenger.dest < elev.floor;
+}
+
 function assignCalls() {
     const pool = unassignedWaiting();
     pool.sort((a, b) => a.arriveTick - b.arriveTick);
@@ -256,7 +325,7 @@ function assignCalls() {
         }
         if (best) {
             best.assigned.push(p);
-            best.targets.add(p.origin);
+            syncTargets(best);
             if (best.state === 'PARKING') {
                 best.parkingTarget = null;
                 best.state = 'MOVING';
@@ -266,28 +335,9 @@ function assignCalls() {
     }
 }
 
-function nextTarget(elev) {
-    if (elev.targets.size === 0) return null;
-    const list = [...elev.targets];
-
-    if (elev.dir === 1) {
-        const ahead = list.filter(f => f >= elev.floor).sort((a, b) => a - b);
-        if (ahead.length) return ahead[0];
-        return list.sort((a, b) => b - a)[0];
-    }
-    if (elev.dir === -1) {
-        const ahead = list.filter(f => f <= elev.floor).sort((a, b) => b - a);
-        if (ahead.length) return ahead[0];
-        return list.sort((a, b) => a - b)[0];
-    }
-    list.sort((a, b) => Math.abs(a - elev.floor) - Math.abs(b - elev.floor));
-    return list[0];
-}
-
 function openDoors(elev) {
     elev.doorTicks = doorDwell;
     elev.state = 'DOORS';
-    elev.targets.delete(elev.floor);
 
     const staying = [];
     for (const p of elev.passengers) {
@@ -312,41 +362,35 @@ function openDoors(elev) {
     });
 
     for (const p of unassignedWaiting()) {
-        if (p.origin !== elev.floor) continue;
+        if (!canBoardPassenger(elev, p)) continue;
         if (elev.passengers.length + canBoard.length >= capacity) break;
-        let ok = true;
-        if (elev.passengers.length > 0 && elev.dir !== 0 && p.dir !== elev.dir) {
-            ok = false;
-        }
-        if (ok) canBoard.push(p);
+        canBoard.push(p);
     }
 
     for (const p of canBoard) {
         if (elev.passengers.length >= capacity) {
             elev.assigned.push(p);
-            elev.targets.add(p.origin);
             continue;
         }
         waiting = waiting.filter(w => w.id !== p.id);
         p.state = 'RIDING';
         p.boardTick = tickCount;
         elev.passengers.push(p);
-        elev.targets.add(p.dest);
     }
 
-    if (elev.passengers.length) {
-        const up = elev.passengers.filter(p => p.dest > elev.floor).length;
-        const down = elev.passengers.filter(p => p.dest < elev.floor).length;
-        elev.dir = up >= down ? 1 : -1;
-    }
+    syncTargets(elev);
+    elev.dir = chooseDirection(elev);
 }
 
 function stepElevator(elev) {
     if (elev.doorTicks > 0) {
         elev.doorTicks--;
         if (elev.doorTicks === 0) {
-            if (elev.targets.size > 0 || elev.assigned.length > 0) {
+            syncTargets(elev);
+            if (hasWork(elev)) {
                 elev.state = 'MOVING';
+                elev.parkingTarget = null;
+                elev.dir = chooseDirection(elev);
             } else if (elev.passengers.length === 0) {
                 const park = parkingFloorFor(elev);
                 if (park !== elev.floor && parkingStrategy !== 'stay') {
@@ -360,21 +404,9 @@ function stepElevator(elev) {
                 }
             } else {
                 elev.state = 'MOVING';
+                elev.dir = chooseDirection(elev);
             }
         }
-        return;
-    }
-
-    const shouldStop =
-        elev.passengers.some(p => p.dest === elev.floor) ||
-        elev.assigned.some(p => p.origin === elev.floor) ||
-        (elev.targets.has(elev.floor) && (
-            elev.passengers.some(p => p.dest === elev.floor) ||
-            waiting.some(p => p.origin === elev.floor && p.state === 'WAITING')
-        ));
-
-    if (shouldStop && elev.state !== 'PARKING') {
-        openDoors(elev);
         return;
     }
 
@@ -384,9 +416,10 @@ function stepElevator(elev) {
             elev.dir = 0;
             return;
         }
-        if (elev.assigned.length || elev.targets.size) {
+        if (hasWork(elev)) {
             elev.parkingTarget = null;
             elev.state = 'MOVING';
+            elev.dir = chooseDirection(elev);
         } else if (elev.floor === elev.parkingTarget) {
             elev.state = 'IDLE';
             elev.dir = 0;
@@ -400,37 +433,41 @@ function stepElevator(elev) {
     }
 
     if (elev.state === 'IDLE') {
-        const park = parkingFloorFor(elev);
-        if (park !== elev.floor && parkingStrategy !== 'stay') {
-            elev.parkingTarget = park;
-            elev.state = 'PARKING';
-            elev.dir = park > elev.floor ? 1 : -1;
+        if (hasWork(elev)) {
+            elev.state = 'MOVING';
+            elev.parkingTarget = null;
+            elev.dir = chooseDirection(elev);
+        } else {
+            const park = parkingFloorFor(elev);
+            if (park !== elev.floor && parkingStrategy !== 'stay') {
+                elev.parkingTarget = park;
+                elev.state = 'PARKING';
+                elev.dir = park > elev.floor ? 1 : -1;
+            }
         }
         return;
     }
 
-    const target = nextTarget(elev);
-    if (target == null) {
-        if (elev.passengers.length === 0) {
-            elev.state = 'IDLE';
-            elev.dir = 0;
-        }
-        return;
-    }
-
-    if (target === elev.floor) {
+    // MOVING — one floor per tick, stop only at floors in the service set
+    if (shouldStopAtFloor(elev)) {
         openDoors(elev);
         return;
     }
 
-    elev.dir = target > elev.floor ? 1 : -1;
-    elev.floor += elev.dir;
+    const dir = chooseDirection(elev);
+    if (dir === 0) {
+        elev.state = 'IDLE';
+        elev.dir = 0;
+        return;
+    }
+
+    elev.dir = dir;
+    elev.floor += dir;
     if (elev.passengers.length === 0) emptyTravel++;
 
-    const stopNow =
-        elev.passengers.some(p => p.dest === elev.floor) ||
-        elev.assigned.some(p => p.origin === elev.floor);
-    if (stopNow) openDoors(elev);
+    if (shouldStopAtFloor(elev)) {
+        openDoors(elev);
+    }
 }
 
 function simTick() {
