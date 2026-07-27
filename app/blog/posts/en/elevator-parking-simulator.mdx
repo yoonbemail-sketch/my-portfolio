@@ -20,12 +20,16 @@ Where should idle elevators wait in an **apartment**? This tick-based simulator 
 
 1. Traffic inputs + **scenario seed** define one passenger stream
 2. **Replay** restarts the same stream
-3. **Compare all** runs every parking strategy headlessly on that stream
+3. **Compare all** runs every parking strategy headlessly in the browser on that stream
 4. Change seed / New only when you want a different world
 
 ## Question
 
-“배치” means **where to send a free car while it waits**. With identical arrivals, lobby parking vs stay/spread differences show up cleanly in avg wait and empty travel.
+**Parking** means where to send a free car while it waits. With identical arrivals, lobby parking vs stay/spread differences show up cleanly in avg wait and empty travel.
+
+## Building view
+
+`Out | Floors | Elevators | Hall` — alighted passengers on the left, waiting hall calls on the right. Hover dots or cars for trip / panel details. Cars use collective **SCAN** boarding (finish one direction before reversing).
 
 ## Traffic model (apartment default)
 
@@ -35,7 +39,7 @@ Where should idle elevators wait in an **apartment**? This tick-based simulator 
 | Evening ingress | Lobby → upper floors |
 | Midday / off-peak | Both directions |
 
-Interfloor trips default to **10%**. Office any-floor OD is deferred.
+Interfloor trips default to **10%**. Arrivals are Bernoulli per tick (discrete Poisson-like). Office any-floor OD is deferred.
 
 ## Controls
 
@@ -49,8 +53,8 @@ Interfloor trips default to **10%**. Office any-floor OD is deferred.
 
 ## Metrics
 
-- **Avg / Max wait** — hall call to board
-- **Empty travel** — floors moved empty (parking cost)
+- **Avg / Max wait (ticks)** — hall call to board
+- **Empty travel (floors)** — floors moved empty (parking cost)
 - **Ticks / Completed** — makespan and throughput
 
 ## Tech stack

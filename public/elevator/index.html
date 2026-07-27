@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,17 +28,17 @@
                 <button class="btn" id="btn-pause" type="button" disabled>Pause</button>
                 <button class="btn" id="btn-reset" type="button">Replay</button>
                 <button class="btn" id="btn-compare" type="button">Compare all</button>
-                <button class="btn ghost mobile-toggle" id="mobile-toggle" type="button" aria-label="Toggle controls">Controls</button>
+                <button class="btn ghost mobile-toggle" id="mobile-toggle" type="button" aria-label="Toggle controls" aria-expanded="false" aria-controls="sim-controls">Controls</button>
             </div>
         </header>
 
         <section class="metrics" aria-label="Metrics">
             <div class="metric">
-                <span class="metric-label">Avg wait</span>
+                <span class="metric-label">Avg wait (ticks)</span>
                 <span class="metric-value" id="stat-avg-wait">0</span>
             </div>
             <div class="metric">
-                <span class="metric-label">Max wait</span>
+                <span class="metric-label">Max wait (ticks)</span>
                 <span class="metric-value" id="stat-max-wait">0</span>
             </div>
             <div class="metric metric-wide">
@@ -49,8 +49,12 @@
                 </div>
             </div>
             <div class="metric">
-                <span class="metric-label">Empty travel</span>
+                <span class="metric-label">Empty travel (floors)</span>
                 <span class="metric-value" id="stat-empty">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Ticks</span>
+                <span class="metric-value" id="stat-ticks">0</span>
             </div>
         </section>
 
@@ -121,8 +125,8 @@
                     <div class="building" id="building"></div>
                 </div>
                 <ul class="legend">
-                    <li><i class="swatch alighted"></i>Alighted (out)</li>
-                    <li><i class="swatch waiting"></i>Waiting (hall)</li>
+                    <li><i class="swatch alighted"></i>Out (alighted)</li>
+                    <li><i class="swatch waiting"></i>Hall (waiting)</li>
                     <li><i class="swatch riding"></i>Riding</li>
                     <li><i class="swatch idle"></i>Idle</li>
                     <li><i class="swatch serving"></i>Serving</li>
@@ -130,8 +134,13 @@
                     <li><i class="swatch doors"></i>Doors</li>
                 </ul>
                 <section class="compare-panel" id="compare-panel" hidden>
-                    <h2>Same scenario · strategy comparison</h2>
-                    <p class="hint">Passenger arrivals are fixed. Only parking policy changes.</p>
+                    <div class="compare-head">
+                        <div>
+                            <h2>Same scenario · strategy comparison</h2>
+                            <p class="hint">Passenger arrivals are fixed. Only parking policy changes.</p>
+                        </div>
+                        <button class="btn ghost" id="btn-compare-close" type="button" aria-label="Close comparison">Close</button>
+                    </div>
                     <div class="table-wrap">
                         <table id="compare-table">
                             <thead>
