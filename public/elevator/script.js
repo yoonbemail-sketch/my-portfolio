@@ -292,19 +292,31 @@ function chooseDirection(elev) {
     return up >= down ? 1 : -1;
 }
 
-function shouldStopAtFloor(elev) {
-    const f = elev.floor;
-    if (elev.passengers.some(p => p.dest === f)) return true;
-    if (elev.assigned.some(p => p.origin === f)) return true;
-    return false;
-}
-
+/**
+ * Collective/SCAN boarding: same-direction hall calls only, except at the
+ * turnaround floor (no further stops ahead) where opposite calls may board
+ * before reversing — e.g. empty car climbs to 7 for down calls, then 7→6→4→3→1.
+ */
 function canBoardPassenger(elev, passenger) {
     if (passenger.origin !== elev.floor) return false;
     if (passenger.state !== 'WAITING') return false;
     if (elev.dir === 0) return true;
-    if (elev.dir === 1) return passenger.dest > elev.floor;
-    return passenger.dest < elev.floor;
+    if (elev.dir === 1) {
+        if (passenger.dir === 1) return true;
+        return !hasStopsAbove(elev);
+    }
+    if (elev.dir === -1) {
+        if (passenger.dir === -1) return true;
+        return !hasStopsBelow(elev);
+    }
+    return false;
+}
+
+function shouldStopAtFloor(elev) {
+    const f = elev.floor;
+    if (elev.passengers.some(p => p.dest === f)) return true;
+    if (elev.assigned.some(p => p.origin === f && canBoardPassenger(elev, p))) return true;
+    return false;
 }
 
 function assignCalls() {
@@ -363,7 +375,12 @@ function openDoors(elev) {
     const seen = new Set();
 
     elev.assigned = elev.assigned.filter(p => {
-        if (p.origin === elev.floor && p.state === 'WAITING' && !seen.has(p.id)) {
+        if (
+            p.origin === elev.floor &&
+            p.state === 'WAITING' &&
+            !seen.has(p.id) &&
+            canBoardPassenger(elev, p)
+        ) {
             canBoard.push(p);
             seen.add(p.id);
             return false;
