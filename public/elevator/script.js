@@ -28,6 +28,8 @@ let scenarioSeed = 42;
 let tickCount = 0;
 let elevators = [];
 let waiting = [];
+/** Passengers who finished their trip, grouped visually by alight floor */
+let alighted = [];
 let completedWaits = [];
 let completedRides = [];
 let emptyTravel = 0;
@@ -344,6 +346,13 @@ function openDoors(elev) {
             completedCount++;
             completedRides.push(tickCount - p.boardTick);
             completedWaits.push(p.boardTick - p.arriveTick);
+            alighted.push({
+                id: p.id,
+                origin: p.origin,
+                dest: p.dest,
+                floor: elev.floor,
+                alightTick: tickCount,
+            });
         } else {
             staying.push(p);
         }
@@ -506,12 +515,18 @@ function resetRuntimeState() {
     callHeat = {};
     nextPassengerId = 1;
     scenarioCursor = 0;
+    alighted = [];
     buildElevators();
 }
 
 function initBuildingDOM() {
     buildingEl.style.setProperty('--shaft-count', elevatorCount);
     buildingEl.innerHTML = '';
+
+    const alightedH = document.createElement('div');
+    alightedH.className = 'alighted-header';
+    alightedH.textContent = 'Out';
+    buildingEl.appendChild(alightedH);
 
     const corner = document.createElement('div');
     corner.className = 'corner-header';
@@ -531,6 +546,11 @@ function initBuildingDOM() {
     buildingEl.appendChild(hallH);
 
     for (let f = floors; f >= 1; f--) {
+        const alightedCell = document.createElement('div');
+        alightedCell.className = 'alighted-cell';
+        alightedCell.dataset.floor = f;
+        buildingEl.appendChild(alightedCell);
+
         const label = document.createElement('div');
         label.className = 'floor-label' + (f === LOBBY ? ' lobby' : '');
         label.textContent = f === LOBBY ? 'L1' : String(f);
@@ -558,6 +578,10 @@ function floorLabel(f) {
 
 function paxTip(p) {
     return `#${p.id}  ·  ${floorLabel(p.origin)} → ${floorLabel(p.dest)}`;
+}
+
+function alightedTip(p) {
+    return `#${p.id}  ·  ${floorLabel(p.origin)} → ${floorLabel(p.dest)}\nArrived @ ${floorLabel(p.floor)}`;
 }
 
 function elevPanelTip(elev) {
@@ -632,6 +656,7 @@ function render() {
     buildingEl.querySelectorAll('.elevator-car').forEach(el => el.remove());
     buildingEl.querySelectorAll('.shaft-cell').forEach(el => el.classList.remove('has-car'));
     buildingEl.querySelectorAll('.hall-cell').forEach(el => { el.innerHTML = ''; });
+    buildingEl.querySelectorAll('.alighted-cell').forEach(el => { el.innerHTML = ''; });
 
     for (const elev of elevators) {
         const cell = buildingEl.querySelector(`.shaft-cell[data-floor="${elev.floor}"][data-shaft="${elev.id}"]`);
@@ -691,6 +716,29 @@ function render() {
             more.className = 'hall-more';
             more.textContent = `+${list.length - 12}`;
             hall.appendChild(more);
+        }
+    }
+
+    const alightedByFloor = {};
+    for (const p of alighted) {
+        if (!alightedByFloor[p.floor]) alightedByFloor[p.floor] = [];
+        alightedByFloor[p.floor].push(p);
+    }
+    for (const [floor, list] of Object.entries(alightedByFloor)) {
+        const cell = buildingEl.querySelector(`.alighted-cell[data-floor="${floor}"]`);
+        if (!cell) continue;
+        const show = list.slice(0, 12);
+        for (const p of show) {
+            const dot = document.createElement('div');
+            dot.className = 'pax alighted';
+            bindTip(dot, () => alightedTip(p));
+            cell.appendChild(dot);
+        }
+        if (list.length > 12) {
+            const more = document.createElement('span');
+            more.className = 'alighted-more';
+            more.textContent = `+${list.length - 12}`;
+            cell.appendChild(more);
         }
     }
 }
