@@ -827,6 +827,151 @@ function updateScenarioLabel() {
     el.textContent = `Scenario seed ${scenarioSeed} · ${scenario.length} trips`;
 }
 
+function dirLabel(dir) {
+    if (dir === 1) return '↑';
+    if (dir === -1) return '↓';
+    return '·';
+}
+
+function formatDebugSnapshot() {
+    const m = snapshotMetrics();
+    const tpsEl = document.getElementById('sim-speed');
+    const tps = tpsEl ? Number(tpsEl.value) : Math.round(1000 / Math.max(1, tickDelay));
+    const lines = [
+        'Elevator Parking — debug snapshot',
+        `time: ${new Date().toISOString()}`,
+        '',
+        '## Settings',
+        `seed: ${scenarioSeed}`,
+        `strategy: ${parkingStrategy} (${STRATEGY_LABELS[parkingStrategy] || parkingStrategy})`,
+        `traffic: ${peakMode}`,
+        `interfloor: ${Math.round(interfloorRate * 100)}%`,
+        `doorDwell: ${doorDwell}`,
+        `floors: ${floors}`,
+        `elevators: ${elevatorCount}`,
+        `capacity: ${capacity}`,
+        `arrivalRate: ${Math.round(arrivalRate * 100)}%`,
+        `target: ${targetPassengers}`,
+        `speed: ${tps} TPS`,
+        `running: ${isRunning}`,
+        '',
+        '## Metrics',
+        `tick: ${m.ticks}`,
+        `avgWait: ${m.avgWait ? m.avgWait.toFixed(2) : '0'}`,
+        `maxWait: ${m.maxWait}`,
+        `emptyTravel: ${m.emptyTravel}`,
+        `completed: ${m.completed} / ${targetPassengers}`,
+        `waiting: ${waiting.filter(p => p.state === 'WAITING').length}`,
+        `scenarioTrips: ${scenario.length} (cursor ${scenarioCursor})`,
+        '',
+        '## Elevators',
+    ];
+
+    for (const elev of elevators) {
+        const full = elev.load() >= capacity ? ' FULL' : '';
+        lines.push(
+            `E${elev.id + 1}: ${elev.state} @ ${floorLabel(elev.floor)} ${dirLabel(elev.dir)} ` +
+            `load ${elev.load()}/${capacity}${full}` +
+            (elev.parkingTarget != null ? ` park→${floorLabel(elev.parkingTarget)}` : '') +
+            (elev.doorTicks > 0 ? ` doors=${elev.doorTicks}` : '')
+        );
+        if (elev.passengers.length) {
+            lines.push('  riders: ' + elev.passengers.map(
+                p => `#${p.id} ${floorLabel(p.origin)}→${floorLabel(p.dest)}`
+            ).join(', '));
+        }
+        if (elev.assigned.length) {
+            lines.push('  pickup: ' + elev.assigned.map(
+                p => `#${p.id} @${floorLabel(p.origin)}→${floorLabel(p.dest)}`
+            ).join(', '));
+        }
+        const stops = [...getStopFloors(elev)].sort((a, b) => a - b);
+        if (stops.length) {
+            lines.push('  stops: ' + stops.map(floorLabel).join(', '));
+        }
+    }
+
+    lines.push('', '## Hall waiting');
+    const byFloor = {};
+    for (const p of waiting) {
+        if (p.state !== 'WAITING') continue;
+        if (!byFloor[p.origin]) byFloor[p.origin] = [];
+        byFloor[p.origin].push(p);
+    }
+    const floorsWait = Object.keys(byFloor).map(Number).sort((a, b) => b - a);
+    if (!floorsWait.length) {
+        lines.push('(none)');
+    } else {
+        for (const f of floorsWait) {
+            const list = byFloor[f];
+            lines.push(
+                `${floorLabel(f)} (${list.length}): ` +
+                list.map(p => `#${p.id}→${floorLabel(p.dest)} arr=${p.arriveTick}`).join(', ')
+            );
+        }
+    }
+
+    lines.push('', '## Alighted (recent, max 20)');
+    const recent = alighted.slice(-20);
+    if (!recent.length) {
+        lines.push('(none)');
+    } else {
+        for (const p of recent) {
+            lines.push(
+                `#${p.id} ${floorLabel(p.origin)}→${floorLabel(p.dest)} ` +
+                `out@${floorLabel(p.floor)} t=${p.alightTick}`
+            );
+        }
+        if (alighted.length > 20) {
+            lines.push(`… ${alighted.length - 20} earlier`);
+        }
+    }
+
+    const upcoming = scenario.slice(scenarioCursor, scenarioCursor + 8);
+    lines.push('', '## Upcoming arrivals (next 8)');
+    if (!upcoming.length) {
+        lines.push('(none)');
+    } else {
+        for (const e of upcoming) {
+            lines.push(`t=${e.tick} ${floorLabel(e.origin)}→${floorLabel(e.dest)}`);
+        }
+    }
+
+    lines.push('');
+    return lines.join('\n');
+}
+
+async function copyDebugSnapshot() {
+    const text = formatDebugSnapshot();
+    const btn = document.getElementById('btn-copy-debug');
+    const label = btn ? btn.textContent : 'Copy debug';
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        if (btn) {
+            btn.textContent = 'Copied';
+            setTimeout(() => { btn.textContent = label; }, 1200);
+        }
+    } catch (err) {
+        console.error(err);
+        if (btn) {
+            btn.textContent = 'Copy failed';
+            setTimeout(() => { btn.textContent = label; }, 1500);
+        }
+    }
+}
+
 function readControls() {
     floors = Number(document.getElementById('floors-range').value);
     elevatorCount = Number(document.getElementById('elevators-range').value);
@@ -974,6 +1119,7 @@ document.getElementById('btn-rewind').addEventListener('click', (e) => {
 });
 document.getElementById('btn-step').addEventListener('click', stepForward);
 document.getElementById('btn-reset').addEventListener('click', () => resetSimulation({ newScenario: false }));
+document.getElementById('btn-copy-debug').addEventListener('click', () => { copyDebugSnapshot(); });
 document.getElementById('btn-new-scenario').addEventListener('click', () => {
     const next = (Math.floor(Math.random() * 90000) + 10000);
     document.getElementById('seed-input').value = String(next);
