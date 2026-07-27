@@ -26,7 +26,8 @@
             <div class="actions">
                 <button class="btn primary" id="btn-play" type="button">Start</button>
                 <button class="btn" id="btn-pause" type="button" disabled>Pause</button>
-                <button class="btn" id="btn-reset" type="button">Reset</button>
+                <button class="btn" id="btn-reset" type="button">Replay</button>
+                <button class="btn" id="btn-compare" type="button">Compare all</button>
                 <button class="btn ghost mobile-toggle" id="mobile-toggle" type="button" aria-label="Toggle controls">Controls</button>
             </div>
         </header>
@@ -64,6 +65,14 @@
                         <option value="spread">Spread — even homes</option>
                         <option value="demand">Demand — hot floors</option>
                     </select>
+                </div>
+                <div class="field scenario-field">
+                    <label for="seed-input">Scenario seed</label>
+                    <div class="seed-row">
+                        <input type="number" id="seed-input" min="1" max="999999" value="42">
+                        <button class="btn" id="btn-new-scenario" type="button">New</button>
+                    </div>
+                    <p class="hint" id="scenario-label">Scenario seed 42</p>
                 </div>
                 <div class="field">
                     <label for="peak-select">Traffic period</label>
@@ -118,6 +127,25 @@
                     <li><i class="swatch parking"></i>Parking</li>
                     <li><i class="swatch doors"></i>Doors</li>
                 </ul>
+                <section class="compare-panel" id="compare-panel" hidden>
+                    <h2>Same scenario · strategy comparison</h2>
+                    <p class="hint">Passenger arrivals are fixed. Only parking policy changes.</p>
+                    <div class="table-wrap">
+                        <table id="compare-table">
+                            <thead>
+                                <tr>
+                                    <th>Strategy</th>
+                                    <th>Avg wait</th>
+                                    <th>Max wait</th>
+                                    <th>Empty</th>
+                                    <th>Ticks</th>
+                                    <th>Done</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
             </main>
         </div>
     </div>

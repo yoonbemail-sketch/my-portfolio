@@ -1,10 +1,10 @@
 ---
 title: 'Elevator Parking Simulator'
 publishedAt: '2026-07-27'
-summary: 'Apartment parking simulator — where should idle elevators wait when most trips are lobby↔home, under morning egress and evening ingress?'
+summary: 'Apartment elevator parking simulator with fixed passenger scenarios — compare Stay/Lobby/Mid/Spread/Demand on the same trip stream.'
 ---
 
-Where should idle elevators wait in an **apartment**? This tick-based simulator compares parking (standby placement) strategies when most residential trips go to or from the lobby, measuring passenger wait and empty-car travel.
+Where should idle elevators wait in an **apartment**? This tick-based simulator holds the passenger scenario fixed (seeded arrivals), then compares parking strategies so only elevator policy changes.
 
 [GitHub](https://github.com/yoonbemail-sketch/elevator) · [Full demo](/elevator/index.html)
 
@@ -13,12 +13,19 @@ Where should idle elevators wait in an **apartment**? This tick-based simulator 
 <DemoEmbed
   src="/elevator/index.html"
   href="/elevator/index.html"
-  title="Elevator Parking Simulator — apartment traffic"
+  title="Elevator Parking Simulator — fixed scenario compare"
 />
+
+## Fair comparison
+
+1. Traffic inputs + **scenario seed** define one passenger stream
+2. **Replay** restarts the same stream
+3. **Compare all** runs every parking strategy headlessly on that stream
+4. Change seed / New only when you want a different world
 
 ## Question
 
-“배치” means **where to send a free car while it waits**, not shaft construction. In apartments, callers above floor 1 usually want the lobby; evening arrivals usually leave from the lobby to a home floor. Lobby-only parking can help ingress and hurt egress — and the reverse for stay/spread.
+“배치” means **where to send a free car while it waits**. With identical arrivals, lobby parking vs stay/spread differences show up cleanly in avg wait and empty travel.
 
 ## Traffic model (apartment default)
 
@@ -26,34 +33,26 @@ Where should idle elevators wait in an **apartment**? This tick-based simulator 
 | --- | --- |
 | Morning egress | Upper floors → lobby |
 | Evening ingress | Lobby → upper floors |
-| Midday / off-peak | Both directions, lower rate shape |
+| Midday / off-peak | Both directions |
 
-Interfloor trips (upper↔upper) default to **10%** and are adjustable. Office any-floor OD is deferred as a later building-type switch.
+Interfloor trips default to **10%**. Office any-floor OD is deferred.
 
-## What you can compare
+## Controls
 
 | Control | Role |
 | --- | --- |
 | Parking strategy | Stay / Lobby / Mid / Spread / Demand |
+| Scenario seed | Fixed passenger stream |
 | Traffic period | Morning / Evening / Midday |
-| Interfloor % | Share of non-lobby residential trips |
-| Door dwell | Stop time at each floor |
+| Interfloor % / Door dwell | Residential OD / stop time |
 | Building knobs | Floors, cars, capacity, arrival rate |
 
 ## Metrics
 
 - **Avg / Max wait** — hall call to board
-- **Completed** — trips finished vs target
-- **Empty travel** — floors moved with no passengers (parking cost)
-
-## How it runs
-
-Each tick: spawn apartment OD passengers → assign nearest capable car → move / door dwell / board-alight → if idle, apply the selected parking policy.
+- **Empty travel** — floors moved empty (parking cost)
+- **Ticks / Completed** — makespan and throughput
 
 ## Tech stack
 
-Vanilla HTML · CSS · JavaScript (tick loop + DOM grid) · hosted at `/elevator/`
-
-## Next
-
-Building type (office), uneven floor population, car speed, batch arrivals — same control surface.
+Vanilla HTML · CSS · JavaScript · `/elevator/`

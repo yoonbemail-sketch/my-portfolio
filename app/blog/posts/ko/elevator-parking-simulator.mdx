@@ -1,10 +1,10 @@
 ---
 title: 'Elevator Parking Simulator'
 publishedAt: '2026-07-27'
-summary: '아파트 파킹 시뮬레이터 — 대부분 로비↔세대 통행일 때, 유휴 엘리베이터를 어디에 대기시킬지 아침 퇴근·저녁 귀가 피크에서 비교합니다.'
+summary: '아파트 엘리베이터 파킹 시뮬 — 승객 시나리오를 고정한 뒤 Stay/Lobby/Mid/Spread/Demand만 바꿔 공정 비교합니다.'
 ---
 
-**아파트**에서 유휴 엘리베이터는 어디에 대기해야 할까? 주거 통행이 대부분 로비와 세대 층 사이일 때, 파킹(대기 배치) 전략을 비교하고 승객 대기시간과 빈 차 이동 거리를 측정합니다.
+**아파트**에서 유휴 엘리베이터는 어디에 대기해야 할까? 승객 도착 시나리오(시드)를 고정한 뒤 파킹 전략만 바꿔, 대기시간과 공차 이동을 공정하게 비교합니다.
 
 [GitHub](https://github.com/yoonbemail-sketch/elevator) · [전체 화면 데모](/elevator/index.html)
 
@@ -13,12 +13,19 @@ summary: '아파트 파킹 시뮬레이터 — 대부분 로비↔세대 통행�
 <DemoEmbed
   src="/elevator/index.html"
   href="/elevator/index.html"
-  title="Elevator Parking Simulator — 아파트 트래픽"
+  title="Elevator Parking Simulator — 시나리오 고정 비교"
 />
+
+## 공정 비교
+
+1. 트래픽 입력 + **scenario seed**로 승객 스트림 하나 생성
+2. **Replay**는 같은 스트림 재실행
+3. **Compare all**은 그 스트림으로 모든 파킹 전략을 일괄 실행
+4. 다른 세상을 보고 싶을 때만 seed / New
 
 ## 질문
 
-여기서 ‘배치’는 샤프트 위치가 아니라 **빈 차를 어느 층으로 보내 대기시킬지**입니다. 아파트에서는 2층 이상 호출이 대개 1층(로비)행이고, 저녁 귀가 피크는 로비→세대가 많습니다. 로비 고정 파킹은 귀가에는 유리하고 출근 하행에는 불리할 수 있습니다.
+‘배치’는 **빈 차를 어느 층에 대기시킬지**입니다. 도착이 같으면 로비 파킹 vs stay/spread 차이가 avg wait·empty travel에 바로 드러납니다.
 
 ## 트래픽 모델 (아파트 기본)
 
@@ -28,28 +35,24 @@ summary: '아파트 파킹 시뮬레이터 — 대부분 로비↔세대 통행�
 | Evening ingress | 로비 → 상부 |
 | Midday / off-peak | 양방향 |
 
-층간 이동(upper↔upper) 기본 **10%**, 슬라이더로 조절. 오피스형 임의 OD는 이후 building type으로 분리 예정.
+Interfloor 기본 **10%**. 오피스형 OD는 이후 분리.
 
-## 비교할 수 있는 것
+## 컨트롤
 
 | 컨트롤 | 역할 |
 | --- | --- |
 | Parking strategy | Stay / Lobby / Mid / Spread / Demand |
+| Scenario seed | 고정 승객 스트림 |
 | Traffic period | Morning / Evening / Midday |
-| Interfloor % | 로비를 거치지 않는 주거층 통행 비중 |
-| Door dwell | 층 정차 시간 |
+| Interfloor % / Door dwell | 층간 통행 / 정차 시간 |
 | 건물 파라미터 | 층수, 대수, 정원, 도착률 |
 
 ## 지표
 
-- **Avg / Max wait** — 홀 콜부터 탑승까지
-- **Completed** — 목표 대비 완료 트립
-- **Empty travel** — 승객 없이 이동한 층 거리
+- **Avg / Max wait**
+- **Empty travel**
+- **Ticks / Completed**
 
 ## Tech stack
 
-Vanilla HTML · CSS · JavaScript · `/elevator/` 호스팅
-
-## Next
-
-Building type(오피스), 층별 인구 편차, 카 속도, 묶음 도착 — 같은 컨트롤 표면.
+Vanilla HTML · CSS · JavaScript · `/elevator/`
