@@ -14,6 +14,7 @@
     --parking: #a3a3a3;
     --doors: #737373;
     --alighted: #a3a3a3;
+    --full: #c2410c;
     --font: "Geist Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
     --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -51,6 +52,7 @@
         --parking: #737373;
         --doors: #a3a3a3;
         --alighted: #737373;
+        --full: #fb923c;
     }
 
     html {
@@ -484,6 +486,11 @@ input[type="range"] {
     color: var(--bg);
 }
 
+.elevator-car.full {
+    border: 2px solid var(--full);
+    box-shadow: inset 0 0 0 1px var(--full);
+}
+
 .car-riders {
     display: flex;
     flex-wrap: wrap;
@@ -620,6 +627,11 @@ input[type="range"] {
 
 .swatch.doors {
     background: var(--doors);
+}
+
+.swatch.full {
+    background: transparent;
+    border: 2px solid var(--full);
 }
 
 /* Embed: tighter chrome when framed in portfolio */
