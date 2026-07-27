@@ -26,6 +26,8 @@
             <div class="actions">
                 <button class="btn primary" id="btn-play" type="button">Start</button>
                 <button class="btn" id="btn-pause" type="button" disabled>Pause</button>
+                <button class="btn" id="btn-rewind" type="button" disabled title="Rewind 1 tick (Shift: −10)">Rewind</button>
+                <button class="btn" id="btn-step" type="button" disabled title="Step forward 1 tick">Step</button>
                 <button class="btn" id="btn-reset" type="button">Replay</button>
                 <button class="btn" id="btn-compare" type="button">Compare all</button>
                 <button class="btn ghost mobile-toggle" id="mobile-toggle" type="button" aria-label="Toggle controls" aria-expanded="false" aria-controls="sim-controls">Controls</button>
@@ -135,6 +137,7 @@
                     <li><i class="swatch serving"></i>Serving</li>
                     <li><i class="swatch parking"></i>Parking</li>
                     <li><i class="swatch doors"></i>Doors</li>
+                    <li><i class="swatch full"></i>Full (at capacity)</li>
                 </ul>
                 <section class="compare-panel" id="compare-panel" hidden>
                     <div class="compare-head">

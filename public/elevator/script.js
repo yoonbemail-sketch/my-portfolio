@@ -589,6 +589,7 @@ function elevPanelTip(elev) {
     ];
     if (elev.dir === 1) lines[0] += ' ↑';
     else if (elev.dir === -1) lines[0] += ' ↓';
+    if (elev.load() >= capacity) lines[0] += '  ·  FULL';
 
     const pressed = [...getStopFloors(elev)].sort((a, b) => a - b);
     if (pressed.length) {
@@ -667,6 +668,7 @@ function render() {
         else if (elev.state === 'DOORS') cls = 'doors';
         else if (elev.state === 'MOVING' || elev.passengers.length > 0) cls = 'serving';
         car.className = `elevator-car ${cls}`;
+        if (elev.load() >= capacity) car.classList.add('full');
 
         const riders = document.createElement('div');
         riders.className = 'car-riders';
@@ -774,6 +776,49 @@ function updatePlayLabel() {
     if (!btn) return;
     const canResume = !isRunning && tickCount > 0 && completedCount < targetPassengers;
     btn.textContent = canResume ? 'Resume' : 'Start';
+    updateTransportButtons();
+}
+
+function updateTransportButtons() {
+    const rewind = document.getElementById('btn-rewind');
+    const step = document.getElementById('btn-step');
+    if (rewind) rewind.disabled = isRunning || tickCount <= 0;
+    if (step) {
+        step.disabled = isRunning || completedCount >= targetPassengers;
+    }
+}
+
+/**
+ * Deterministic rebuild: reset runtime and replay simTick up to targetTick.
+ * Used for rewind without storing full snapshots.
+ */
+function rebuildToTick(targetTick) {
+    const capped = Math.max(0, targetTick | 0);
+    stopSim();
+    resetRuntimeState();
+    while (tickCount < capped) {
+        simTick();
+        if (completedCount >= targetPassengers) break;
+    }
+    render();
+    updateDashboard();
+    updatePlayLabel();
+}
+
+function rewindTicks(n = 1) {
+    if (tickCount <= 0) return;
+    if (isRunning) stopSim();
+    rebuildToTick(tickCount - Math.max(1, n | 0));
+}
+
+function stepForward() {
+    if (isRunning) return;
+    if (completedCount >= targetPassengers) return;
+    ensureScenario(false);
+    simTick();
+    render();
+    updateDashboard();
+    updatePlayLabel();
 }
 
 function updateScenarioLabel() {
@@ -924,6 +969,10 @@ document.getElementById('btn-play').addEventListener('click', () => {
 });
 
 document.getElementById('btn-pause').addEventListener('click', stopSim);
+document.getElementById('btn-rewind').addEventListener('click', (e) => {
+    rewindTicks(e.shiftKey ? 10 : 1);
+});
+document.getElementById('btn-step').addEventListener('click', stepForward);
 document.getElementById('btn-reset').addEventListener('click', () => resetSimulation({ newScenario: false }));
 document.getElementById('btn-new-scenario').addEventListener('click', () => {
     const next = (Math.floor(Math.random() * 90000) + 10000);
