@@ -299,9 +299,7 @@ function shouldStopAtFloor(elev) {
 
 function canBoardPassenger(elev, passenger) {
     if (passenger.origin !== elev.floor) return false;
-    if (elev.passengers.length + elev.assigned.filter(p => p.origin === elev.floor).length >= capacity) {
-        return false;
-    }
+    if (passenger.state !== 'WAITING') return false;
     if (elev.dir === 0) return true;
     if (elev.dir === 1) return passenger.dest > elev.floor;
     return passenger.dest < elev.floor;
@@ -353,18 +351,23 @@ function openDoors(elev) {
     elev.passengers = staying;
 
     const canBoard = [];
+    const seen = new Set();
+
     elev.assigned = elev.assigned.filter(p => {
-        if (p.origin === elev.floor && p.state === 'WAITING') {
+        if (p.origin === elev.floor && p.state === 'WAITING' && !seen.has(p.id)) {
             canBoard.push(p);
+            seen.add(p.id);
             return false;
         }
         return true;
     });
 
     for (const p of unassignedWaiting()) {
+        if (seen.has(p.id)) continue;
         if (!canBoardPassenger(elev, p)) continue;
         if (elev.passengers.length + canBoard.length >= capacity) break;
         canBoard.push(p);
+        seen.add(p.id);
     }
 
     for (const p of canBoard) {
@@ -549,6 +552,82 @@ function initBuildingDOM() {
     }
 }
 
+function floorLabel(f) {
+    return f === LOBBY ? 'L1' : String(f);
+}
+
+function paxTip(p) {
+    return `#${p.id}  ·  ${floorLabel(p.origin)} → ${floorLabel(p.dest)}`;
+}
+
+function elevPanelTip(elev) {
+    const lines = [
+        `E${elev.id + 1}  ·  ${elev.state} @ ${floorLabel(elev.floor)}`,
+    ];
+    if (elev.dir === 1) lines[0] += ' ↑';
+    else if (elev.dir === -1) lines[0] += ' ↓';
+
+    const pressed = [...getStopFloors(elev)].sort((a, b) => a - b);
+    if (pressed.length) {
+        lines.push(`Panel: ${pressed.map(floorLabel).join(', ')}`);
+    } else {
+        lines.push('Panel: —');
+    }
+
+    if (elev.passengers.length) {
+        lines.push('Riders:');
+        for (const p of elev.passengers) {
+            lines.push(`  #${p.id}  ${floorLabel(p.origin)} → ${floorLabel(p.dest)}`);
+        }
+    } else {
+        lines.push('Riders: empty');
+    }
+
+    if (elev.assigned.length) {
+        lines.push('Pickup:');
+        for (const p of elev.assigned) {
+            lines.push(`  #${p.id} waiting @ ${floorLabel(p.origin)} → ${floorLabel(p.dest)}`);
+        }
+    }
+
+    return lines.join('\n');
+}
+
+function showTip(text, x, y) {
+    const tip = document.getElementById('hover-tip');
+    if (!tip) return;
+    tip.textContent = text;
+    tip.hidden = false;
+    const pad = 12;
+    const rect = tip.getBoundingClientRect();
+    let left = x + pad;
+    let top = y + pad;
+    if (left + rect.width > window.innerWidth - 8) left = x - rect.width - pad;
+    if (top + rect.height > window.innerHeight - 8) top = y - rect.height - pad;
+    tip.style.left = `${Math.max(8, left)}px`;
+    tip.style.top = `${Math.max(8, top)}px`;
+}
+
+function hideTip() {
+    const tip = document.getElementById('hover-tip');
+    if (tip) tip.hidden = true;
+}
+
+function bindTip(el, textFn, opts = {}) {
+    el.addEventListener('mouseenter', (e) => {
+        if (opts.stop) e.stopPropagation();
+        showTip(textFn(), e.clientX, e.clientY);
+    });
+    el.addEventListener('mousemove', (e) => {
+        if (opts.stop) e.stopPropagation();
+        showTip(textFn(), e.clientX, e.clientY);
+    });
+    el.addEventListener('mouseleave', (e) => {
+        if (opts.stop) e.stopPropagation();
+        hideTip();
+    });
+}
+
 function render() {
     buildingEl.querySelectorAll('.elevator-car').forEach(el => el.remove());
     buildingEl.querySelectorAll('.shaft-cell').forEach(el => el.classList.remove('has-car'));
@@ -564,8 +643,31 @@ function render() {
         else if (elev.state === 'DOORS') cls = 'doors';
         else if (elev.state === 'MOVING' || elev.passengers.length > 0) cls = 'serving';
         car.className = `elevator-car ${cls}`;
-        car.textContent = String(elev.load());
-        car.title = `E${elev.id + 1} ${elev.state} @${elev.floor}`;
+
+        const riders = document.createElement('div');
+        riders.className = 'car-riders';
+        const showRiders = elev.passengers.slice(0, 8);
+        for (const p of showRiders) {
+            const dot = document.createElement('span');
+            dot.className = 'pax riding';
+            bindTip(dot, () => paxTip(p), { stop: true });
+            riders.appendChild(dot);
+        }
+        if (elev.passengers.length > 8) {
+            const more = document.createElement('span');
+            more.className = 'car-more';
+            more.textContent = `+${elev.passengers.length - 8}`;
+            riders.appendChild(more);
+        }
+        if (!elev.passengers.length) {
+            const count = document.createElement('span');
+            count.className = 'car-count';
+            count.textContent = '0';
+            riders.appendChild(count);
+        }
+
+        car.appendChild(riders);
+        bindTip(car, () => elevPanelTip(elev));
         cell.appendChild(car);
     }
 
@@ -581,12 +683,12 @@ function render() {
         for (const p of show) {
             const dot = document.createElement('div');
             dot.className = 'pax waiting';
-            dot.title = `${p.origin}→${p.dest}`;
+            bindTip(dot, () => paxTip(p));
             hall.appendChild(dot);
         }
         if (list.length > 12) {
             const more = document.createElement('span');
-            more.style.cssText = 'font-size:0.65rem;color:var(--muted);font-family:var(--mono)';
+            more.className = 'hall-more';
             more.textContent = `+${list.length - 12}`;
             hall.appendChild(more);
         }
