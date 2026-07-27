@@ -197,6 +197,14 @@ body {
     margin-bottom: 0;
 }
 
+.compare-settings {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    line-height: 1.45;
+    word-break: break-word;
+}
+
 .compare-panel h2 {
     font-size: 0.9rem;
     font-weight: 600;

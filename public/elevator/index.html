@@ -26,7 +26,7 @@
             <div class="actions">
                 <button class="btn primary" id="btn-play" type="button">Start</button>
                 <button class="btn" id="btn-pause" type="button" disabled>Pause</button>
-                <button class="btn" id="btn-rewind" type="button" disabled title="Rewind 1 tick (Shift: −10)">Rewind</button>
+                <button class="btn" id="btn-rewind" type="button" disabled title="Hold to rewind · Shift: −10/tick">Rewind</button>
                 <button class="btn" id="btn-step" type="button" disabled title="Step forward 1 tick">Step</button>
                 <button class="btn" id="btn-reset" type="button">Replay</button>
                 <button class="btn" id="btn-copy-debug" type="button" title="Copy seed, settings, and current sim state">Copy debug</button>
@@ -144,7 +144,7 @@
                     <div class="compare-head">
                         <div>
                             <h2>Same scenario · strategy comparison</h2>
-                            <p class="hint">Passenger arrivals are fixed. Only parking policy changes.</p>
+                            <p class="hint" id="compare-settings">Passenger arrivals are fixed. Only parking policy changes.</p>
                         </div>
                         <button class="btn ghost" id="btn-compare-close" type="button" aria-label="Close comparison">Close</button>
                     </div>

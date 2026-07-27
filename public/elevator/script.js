@@ -1041,6 +1041,21 @@ function runHeadless(strategy) {
     return { strategy, ...snapshotMetrics() };
 }
 
+function formatCompareSettings() {
+    return [
+        `seed ${scenarioSeed}`,
+        peakMode,
+        `interfloor ${Math.round(interfloorRate * 100)}%`,
+        `dwell ${doorDwell}`,
+        `${floors}F`,
+        `${elevatorCount} cars`,
+        `cap ${capacity}`,
+        `arrival ${Math.round(arrivalRate * 100)}%`,
+        `target ${targetPassengers}`,
+        `${scenario.length} trips`,
+    ].join(' · ');
+}
+
 function compareStrategies() {
     stopSim();
     readControls();
@@ -1075,6 +1090,11 @@ function compareStrategies() {
             <td class="num">${r.completed}</td>
         `;
         tbody.appendChild(tr);
+    }
+    const settingsEl = document.getElementById('compare-settings');
+    if (settingsEl) {
+        settingsEl.textContent = formatCompareSettings();
+        settingsEl.classList.add('compare-settings');
     }
     const panel = document.getElementById('compare-panel');
     panel.hidden = false;
@@ -1114,9 +1134,62 @@ document.getElementById('btn-play').addEventListener('click', () => {
 });
 
 document.getElementById('btn-pause').addEventListener('click', stopSim);
-document.getElementById('btn-rewind').addEventListener('click', (e) => {
-    rewindTicks(e.shiftKey ? 10 : 1);
-});
+
+(function bindRewindHold() {
+    const btn = document.getElementById('btn-rewind');
+    if (!btn) return;
+    let holdTimer = null;
+    let holdInterval = null;
+    let holding = false;
+    let shiftHeld = false;
+
+    function stepSize() {
+        return shiftHeld ? 10 : 1;
+    }
+
+    function stopHold() {
+        holding = false;
+        if (holdTimer) {
+            clearTimeout(holdTimer);
+            holdTimer = null;
+        }
+        if (holdInterval) {
+            clearInterval(holdInterval);
+            holdInterval = null;
+        }
+    }
+
+    function doRewind() {
+        if (btn.disabled || tickCount <= 0) {
+            stopHold();
+            return;
+        }
+        rewindTicks(stepSize());
+        if (tickCount <= 0) stopHold();
+    }
+
+    btn.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        shiftHeld = e.shiftKey;
+        holding = true;
+        doRewind();
+        holdTimer = setTimeout(() => {
+            if (!holding) return;
+            holdInterval = setInterval(doRewind, 70);
+        }, 280);
+        try { btn.setPointerCapture(e.pointerId); } catch (_) { /* ignore */ }
+    });
+
+    btn.addEventListener('pointerup', stopHold);
+    btn.addEventListener('pointercancel', stopHold);
+    btn.addEventListener('pointerleave', stopHold);
+    btn.addEventListener('lostpointercapture', stopHold);
+    window.addEventListener('blur', stopHold);
+    window.addEventListener('keydown', (e) => { if (e.key === 'Shift') shiftHeld = true; });
+    window.addEventListener('keyup', (e) => { if (e.key === 'Shift') shiftHeld = false; });
+})();
+
 document.getElementById('btn-step').addEventListener('click', stepForward);
 document.getElementById('btn-reset').addEventListener('click', () => resetSimulation({ newScenario: false }));
 document.getElementById('btn-copy-debug').addEventListener('click', () => { copyDebugSnapshot(); });
