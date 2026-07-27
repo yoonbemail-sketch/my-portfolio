@@ -4,127 +4,108 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Elevator Parking Simulator</title>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-sans/style.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-mono/style.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="app-container">
-        <aside class="sidebar">
-            <div class="sidebar-top">
-                <div class="logo">
-                    <p>Elevator Parking</p>
-                    <span class="logo-sub">대기 배치 시뮬레이터</span>
-                </div>
-                <button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle Controls">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-                </button>
+    <div class="app">
+        <header class="top">
+            <div class="brand">
+                <h1>Elevator Parking</h1>
+                <p class="lede">Compare where idle cars should wait under peak traffic.</p>
             </div>
-            <div class="spacer"></div>
-            <div class="controls" id="sim-controls">
-                <div class="control-group">
-                    <label for="strategy-select">Parking Strategy</label>
+            <div class="actions">
+                <button class="btn primary" id="btn-play" type="button">Start</button>
+                <button class="btn" id="btn-pause" type="button" disabled>Pause</button>
+                <button class="btn" id="btn-reset" type="button">Reset</button>
+                <button class="btn ghost mobile-toggle" id="mobile-toggle" type="button" aria-label="Toggle controls">Controls</button>
+            </div>
+        </header>
+
+        <section class="metrics" aria-label="Metrics">
+            <div class="metric">
+                <span class="metric-label">Avg wait</span>
+                <span class="metric-value" id="stat-avg-wait">0</span>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Max wait</span>
+                <span class="metric-value" id="stat-max-wait">0</span>
+            </div>
+            <div class="metric metric-wide">
+                <span class="metric-label">Completed</span>
+                <span class="metric-value" id="stat-completed">0 / 80</span>
+                <div class="progress" aria-hidden="true">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+            <div class="metric">
+                <span class="metric-label">Empty travel</span>
+                <span class="metric-value" id="stat-empty">0</span>
+            </div>
+        </section>
+
+        <div class="layout">
+            <aside class="controls" id="sim-controls">
+                <div class="field">
+                    <label for="strategy-select">Parking strategy</label>
                     <select id="strategy-select">
-                        <option value="stay">Stay (마지막 층 대기)</option>
-                        <option value="lobby">Lobby (1층 복귀)</option>
-                        <option value="mid">Mid (중간층 대기)</option>
-                        <option value="spread">Spread (균등 분산)</option>
-                        <option value="demand">Demand (콜 많은 층)</option>
+                        <option value="stay">Stay — last floor</option>
+                        <option value="lobby">Lobby — return to 1</option>
+                        <option value="mid">Mid — building center</option>
+                        <option value="spread">Spread — even homes</option>
+                        <option value="demand">Demand — hot floors</option>
                     </select>
                 </div>
-
-                <div class="control-group">
-                    <label for="peak-select">Peak Mode</label>
+                <div class="field">
+                    <label for="peak-select">Peak mode</label>
                     <select id="peak-select">
                         <option value="mixed">Mixed</option>
-                        <option value="up">Up-peak (출근)</option>
-                        <option value="down">Down-peak (퇴근)</option>
+                        <option value="up">Up-peak</option>
+                        <option value="down">Down-peak</option>
                         <option value="lunch">Lunch</option>
                     </select>
                 </div>
-
-                <div class="control-group">
-                    <label for="floors-range">Floors</label>
+                <div class="field">
+                    <label for="floors-range">Floors <span id="floors-val">20</span></label>
                     <input type="range" id="floors-range" min="8" max="40" value="20">
-                    <span class="range-value" id="floors-val">20</span>
                 </div>
-
-                <div class="control-group">
-                    <label for="elevators-range">Elevators</label>
+                <div class="field">
+                    <label for="elevators-range">Elevators <span id="elevators-val">4</span></label>
                     <input type="range" id="elevators-range" min="1" max="8" value="4">
-                    <span class="range-value" id="elevators-val">4</span>
                 </div>
-
-                <div class="control-group">
-                    <label for="capacity-range">Capacity</label>
+                <div class="field">
+                    <label for="capacity-range">Capacity <span id="capacity-val">8</span></label>
                     <input type="range" id="capacity-range" min="4" max="16" value="8">
-                    <span class="range-value" id="capacity-val">8</span>
                 </div>
-
-                <div class="control-group">
-                    <label for="arrival-range">Arrival Rate</label>
+                <div class="field">
+                    <label for="arrival-range">Arrival rate <span id="arrival-val">15%</span></label>
                     <input type="range" id="arrival-range" min="5" max="40" value="15">
-                    <span class="range-value" id="arrival-val">15%</span>
                 </div>
-
-                <div class="control-group">
-                    <label for="target-range">Target Passengers</label>
+                <div class="field">
+                    <label for="target-range">Target passengers <span id="target-val">80</span></label>
                     <input type="range" id="target-range" min="20" max="200" value="80" step="10">
-                    <span class="range-value" id="target-val">80</span>
                 </div>
-
-                <div class="control-group">
-                    <label for="sim-speed">Simulation Speed</label>
+                <div class="field">
+                    <label for="sim-speed">Speed <span id="sim-speed-val">10 TPS</span></label>
                     <input type="range" id="sim-speed" min="1" max="40" value="10">
-                    <span class="range-value" id="sim-speed-val">10 TPS</span>
                 </div>
+            </aside>
 
-                <div class="action-buttons">
-                    <button class="btn btn-primary" id="btn-play">Start</button>
-                    <button class="btn btn-secondary" id="btn-pause" disabled>Pause</button>
-                    <button class="btn btn-danger" id="btn-reset">Reset</button>
+            <main class="stage">
+                <div class="building-shell">
+                    <div class="building" id="building"></div>
                 </div>
-            </div>
-        </aside>
-
-        <main class="simulation-area">
-            <div class="dashboard">
-                <div class="stat-card">
-                    <span class="stat-label">Avg Wait</span>
-                    <span class="stat-value" id="stat-avg-wait">0</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Max Wait</span>
-                    <span class="stat-value" id="stat-max-wait">0</span>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Completed</span>
-                    <span class="stat-value" id="stat-completed">0 / 80</span>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <span class="stat-label">Empty Travel</span>
-                    <span class="stat-value" id="stat-empty">0</span>
-                </div>
-            </div>
-
-            <div class="building-wrapper">
-                <div class="building" id="building">
-                    <!-- generated by JS -->
-                </div>
-            </div>
-        </main>
-
-        <div class="legend">
-            <div class="legend-item"><div class="blob waiting"></div> Waiting</div>
-            <div class="legend-item"><div class="blob riding"></div> Riding</div>
-            <div class="legend-item"><div class="blob idle-car"></div> Idle</div>
-            <div class="legend-item"><div class="blob parking-car"></div> Parking move</div>
-            <div class="legend-item"><div class="blob busy-car"></div> Serving</div>
+                <ul class="legend">
+                    <li><i class="swatch waiting"></i>Waiting</li>
+                    <li><i class="swatch idle"></i>Idle</li>
+                    <li><i class="swatch serving"></i>Serving</li>
+                    <li><i class="swatch parking"></i>Parking</li>
+                    <li><i class="swatch doors"></i>Doors</li>
+                </ul>
+            </main>
         </div>
     </div>
-
     <script src="script.js"></script>
 </body>
 </html>

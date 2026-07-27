@@ -683,4 +683,14 @@ document.getElementById('mobile-toggle').addEventListener('click', () => {
     document.getElementById('sim-controls').classList.toggle('open');
 });
 
+// Match portfolio embed chrome when framed or ?embed=1
+try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('embed') === '1' || window.self !== window.top) {
+        document.documentElement.classList.add('embed');
+    }
+} catch (_) {
+    document.documentElement.classList.add('embed');
+}
+
 resetSimulation();
