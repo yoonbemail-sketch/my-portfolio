@@ -27,6 +27,14 @@ Where should idle elevators wait in an **apartment**? This tick-based simulator 
 
 **Parking** means where to send a free car while it waits. With identical arrivals, lobby parking vs stay/spread differences show up cleanly in avg wait and empty travel.
 
+## Insight: when parking matters
+
+Parking helps when cars are often **idle**. In light or moderate traffic, Stay / Lobby / Mid / Spread / Demand can move wait time and empty travel.
+
+In a **saturated** building, cars rarely park — they stay in service — so parking policy has little leverage. The better lever is **service zoning** (odd/even floors, low/high banks): fewer stops per trip, less door time, shorter round trips.
+
+This demo isolates parking on a fixed passenger stream. Push arrival rate up in Compare all; shrinking gaps between strategies is a clue that zoning, not parking, is the next experiment when the bank is always busy.
+
 ## Building view
 
 `Out | Floors | Elevators | Hall` — alighted passengers on the left, waiting hall calls on the right. Hover dots or cars for trip / panel details. Cars use collective **SCAN** boarding (finish one direction before reversing).
