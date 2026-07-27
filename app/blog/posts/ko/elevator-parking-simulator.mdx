@@ -1,10 +1,10 @@
 ---
 title: 'Elevator Parking Simulator'
 publishedAt: '2026-07-27'
-summary: '유휴 엘리베이터를 어디에 대기시킬지(파킹 배치)를 피크 트래픽 아래에서 비교하는 틱 기반 시뮬레이터. 대기시간과 공차 이동을 측정합니다.'
+summary: '아파트 파킹 시뮬레이터 — 대부분 로비↔세대 통행일 때, 유휴 엘리베이터를 어디에 대기시킬지 아침 퇴근·저녁 귀가 피크에서 비교합니다.'
 ---
 
-유휴 엘리베이터는 어디에 대기해야 할까? 피크 트래픽 패턴 아래에서 **파킹(대기 배치) 전략**을 비교하고, 승객 대기시간과 빈 차 이동 거리를 측정하는 틱 기반 시뮬레이터입니다.
+**아파트**에서 유휴 엘리베이터는 어디에 대기해야 할까? 주거 통행이 대부분 로비와 세대 층 사이일 때, 파킹(대기 배치) 전략을 비교하고 승객 대기시간과 빈 차 이동 거리를 측정합니다.
 
 [GitHub](https://github.com/yoonbemail-sketch/elevator) · [전체 화면 데모](/elevator/index.html)
 
@@ -13,35 +13,43 @@ summary: '유휴 엘리베이터를 어디에 대기시킬지(파킹 배치)를 
 <DemoEmbed
   src="/elevator/index.html"
   href="/elevator/index.html"
-  title="Elevator Parking Simulator — 전략을 바로 실행"
+  title="Elevator Parking Simulator — 아파트 트래픽"
 />
 
 ## 질문
 
-여기서 ‘배치’는 샤프트 공사 위치가 아니라, **빈 차를 어느 층으로 보내 대기시킬지**입니다. 출근(up-peak: 로비 → 상부)에서는 로비 파킹이 대기를 줄이는 경우가 많고, 퇴근(down-peak)에서는 같은 정책이 공차 이동만 늘리고 상부 홀을 비울 수 있습니다.
+여기서 ‘배치’는 샤프트 위치가 아니라 **빈 차를 어느 층으로 보내 대기시킬지**입니다. 아파트에서는 2층 이상 호출이 대개 1층(로비)행이고, 저녁 귀가 피크는 로비→세대가 많습니다. 로비 고정 파킹은 귀가에는 유리하고 출근 하행에는 불리할 수 있습니다.
+
+## 트래픽 모델 (아파트 기본)
+
+| 시간대 | 전형적 흐름 |
+| --- | --- |
+| Morning egress | 상부 → 로비 |
+| Evening ingress | 로비 → 상부 |
+| Midday / off-peak | 양방향 |
+
+층간 이동(upper↔upper) 기본 **10%**, 슬라이더로 조절. 오피스형 임의 OD는 이후 building type으로 분리 예정.
 
 ## 비교할 수 있는 것
 
 | 컨트롤 | 역할 |
 | --- | --- |
 | Parking strategy | Stay / Lobby / Mid / Spread / Demand |
-| Peak mode | Mixed / Up-peak / Down-peak / Lunch |
+| Traffic period | Morning / Evening / Midday |
+| Interfloor % | 로비를 거치지 않는 주거층 통행 비중 |
+| Door dwell | 층 정차 시간 |
 | 건물 파라미터 | 층수, 대수, 정원, 도착률 |
 
 ## 지표
 
 - **Avg / Max wait** — 홀 콜부터 탑승까지
 - **Completed** — 목표 대비 완료 트립
-- **Empty travel** — 승객 없이 이동한 층 거리 (파킹 비용)
-
-## 동작
-
-틱마다: 피크 모드로 OD 승객 생성 → 가능한 가까운 차 배정 → 이동/문 개방/승하차 → 유휴면 선택한 파킹 정책 적용. UI는 boarding-sim 패턴(전략 드롭다운, 슬라이더, Start/Pause/Reset, 대시보드)을 따릅니다.
+- **Empty travel** — 승객 없이 이동한 층 거리
 
 ## Tech stack
 
-Vanilla HTML · CSS · JavaScript (틱 루프 + DOM 그리드) · 이 사이트 `/elevator/` 에 호스팅
+Vanilla HTML · CSS · JavaScript · `/elevator/` 호스팅
 
 ## Next
 
-더 풍부한 OD, 승객 특성, 존 디스패치, 에너지 지표 — 같은 컨트롤 표면에 모델을 깊게.
+Building type(오피스), 층별 인구 편차, 카 속도, 묶음 도착 — 같은 컨트롤 표면.

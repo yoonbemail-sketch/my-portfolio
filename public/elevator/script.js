@@ -1,6 +1,6 @@
 /**
- * Elevator Parking Simulator
- * Compare idle-car parking strategies under different traffic peaks.
+ * Elevator Parking Simulator — apartment building default
+ * Compare idle-car parking strategies under residential traffic.
  */
 
 const LOBBY = 1;
@@ -9,8 +9,10 @@ let floors = 20;
 let elevatorCount = 4;
 let capacity = 8;
 let arrivalRate = 0.15;
-let peakMode = 'mixed';
+let peakMode = 'evening';
 let parkingStrategy = 'stay';
+let interfloorRate = 0.10; // share of trips that are floor↔floor (not via lobby)
+let doorDwell = 2;
 let targetPassengers = 80;
 let tickDelay = 100;
 
@@ -71,60 +73,47 @@ function randInt(a, b) {
     return a + Math.floor(Math.random() * (b - a + 1));
 }
 
-function pickDest(origin) {
-    let dest = origin;
-    const lunchFloor = Math.max(2, Math.round(floors / 2));
+/** Random residential floor other than `avoid` (2..floors). */
+function randomUpper(avoid) {
+    if (floors < 3) return avoid === 2 ? LOBBY : 2;
+    let f = avoid;
+    for (let i = 0; i < 24 && f === avoid; i++) {
+        f = randInt(2, floors);
+    }
+    if (f === avoid) f = avoid === 2 ? 3 : 2;
+    return f;
+}
 
-    for (let tries = 0; tries < 20 && dest === origin; tries++) {
-        if (peakMode === 'up') {
-            // mostly lobby -> upper
-            if (origin === LOBBY || Math.random() < 0.85) {
-                dest = origin === LOBBY ? randInt(2, floors) : LOBBY;
-            } else {
-                dest = randInt(1, floors);
-            }
-            if (origin !== LOBBY && Math.random() < 0.7) dest = LOBBY;
-            if (origin === LOBBY) dest = randInt(2, floors);
-        } else if (peakMode === 'down') {
-            if (origin !== LOBBY && Math.random() < 0.85) {
-                dest = LOBBY;
-            } else if (origin === LOBBY) {
-                dest = randInt(2, floors);
-            } else {
-                dest = randInt(1, floors);
-            }
-        } else if (peakMode === 'lunch') {
-            const r = Math.random();
-            if (r < 0.4) {
-                dest = origin === lunchFloor ? (Math.random() < 0.5 ? LOBBY : randInt(2, floors)) : lunchFloor;
-            } else if (r < 0.7) {
-                dest = origin === LOBBY ? lunchFloor : LOBBY;
-            } else {
-                dest = randInt(1, floors);
-            }
-        } else {
-            dest = randInt(1, floors);
-        }
+/**
+ * Apartment OD:
+ * - Upper floors mostly go to lobby (leave building)
+ * - Lobby mostly goes to a residential floor (come home)
+ * - `interfloorRate` allows upper↔upper visits
+ */
+function pickDest(origin) {
+    if (origin === LOBBY) {
+        return randomUpper(LOBBY);
     }
-    if (dest === origin) {
-        dest = origin === floors ? origin - 1 : origin + 1;
+    // origin is residential
+    if (Math.random() < interfloorRate) {
+        return randomUpper(origin);
     }
-    return dest;
+    return LOBBY;
 }
 
 function spawnPassenger() {
     let origin;
-    if (peakMode === 'up') {
-        origin = Math.random() < 0.8 ? LOBBY : randInt(2, floors);
-    } else if (peakMode === 'down') {
-        origin = Math.random() < 0.8 ? randInt(2, floors) : LOBBY;
-    } else if (peakMode === 'lunch') {
-        const lunchFloor = Math.max(2, Math.round(floors / 2));
-        const r = Math.random();
-        origin = r < 0.35 ? LOBBY : r < 0.7 ? lunchFloor : randInt(1, floors);
+    if (peakMode === 'morning') {
+        // Leaving for work/school: mostly upper → lobby
+        origin = Math.random() < 0.9 ? randInt(2, floors) : LOBBY;
+    } else if (peakMode === 'evening') {
+        // Coming home: mostly lobby → upper
+        origin = Math.random() < 0.9 ? LOBBY : randInt(2, floors);
     } else {
-        origin = randInt(1, floors);
+        // Midday / off-peak: both directions, slight lobby bias from entries
+        origin = Math.random() < 0.45 ? LOBBY : randInt(2, floors);
     }
+
     const dest = pickDest(origin);
     const p = new Passenger(origin, dest);
     waiting.push(p);
@@ -260,7 +249,7 @@ function nextTarget(elev) {
 }
 
 function openDoors(elev) {
-    elev.doorTicks = 2; // dwell
+    elev.doorTicks = doorDwell;
     elev.state = 'DOORS';
     elev.targets.delete(elev.floor);
 
@@ -573,6 +562,8 @@ function readControls() {
     elevatorCount = Number(document.getElementById('elevators-range').value);
     capacity = Number(document.getElementById('capacity-range').value);
     arrivalRate = Number(document.getElementById('arrival-range').value) / 100;
+    interfloorRate = Number(document.getElementById('interfloor-range').value) / 100;
+    doorDwell = Number(document.getElementById('dwell-range').value);
     targetPassengers = Number(document.getElementById('target-range').value);
     parkingStrategy = document.getElementById('strategy-select').value;
     peakMode = document.getElementById('peak-select').value;
@@ -631,6 +622,8 @@ bindRange('floors-range', 'floors-val', v => v);
 bindRange('elevators-range', 'elevators-val', v => v);
 bindRange('capacity-range', 'capacity-val', v => v);
 bindRange('arrival-range', 'arrival-val', v => `${v}%`);
+bindRange('interfloor-range', 'interfloor-val', v => `${v}%`);
+bindRange('dwell-range', 'dwell-val', v => v);
 bindRange('target-range', 'target-val', v => v);
 bindRange('sim-speed', 'sim-speed-val', v => `${v} TPS`);
 
@@ -642,13 +635,7 @@ document.getElementById('btn-play').addEventListener('click', () => {
     if (needRebuild && completedCount === 0 && tickCount === 0) {
         resetSimulation();
     }
-    parkingStrategy = document.getElementById('strategy-select').value;
-    peakMode = document.getElementById('peak-select').value;
-    arrivalRate = Number(document.getElementById('arrival-range').value) / 100;
-    capacity = Number(document.getElementById('capacity-range').value);
-    targetPassengers = Number(document.getElementById('target-range').value);
-    const tps = Number(document.getElementById('sim-speed').value);
-    tickDelay = 1000 / tps;
+    readControls();
     startSim();
 });
 

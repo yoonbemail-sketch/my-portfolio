@@ -1,10 +1,10 @@
 ---
 title: 'Elevator Parking Simulator'
 publishedAt: '2026-07-27'
-summary: 'Tick-based simulator comparing where idle elevators should wait — parking strategies under peak traffic, with wait time and empty-travel metrics.'
+summary: 'Apartment parking simulator — where should idle elevators wait when most trips are lobby↔home, under morning egress and evening ingress?'
 ---
 
-Where should idle elevators wait? This tick-based simulator compares parking (standby placement) strategies under different peak traffic patterns, measuring passenger wait and empty-car travel.
+Where should idle elevators wait in an **apartment**? This tick-based simulator compares parking (standby placement) strategies when most residential trips go to or from the lobby, measuring passenger wait and empty-car travel.
 
 [GitHub](https://github.com/yoonbemail-sketch/elevator) · [Full demo](/elevator/index.html)
 
@@ -13,20 +13,32 @@ Where should idle elevators wait? This tick-based simulator compares parking (st
 <DemoEmbed
   src="/elevator/index.html"
   href="/elevator/index.html"
-  title="Elevator Parking Simulator — try strategies live"
+  title="Elevator Parking Simulator — apartment traffic"
 />
 
 ## Question
 
-Elevator “배치” here means **where to send a free car while it waits**, not shaft construction. Under up-peak (lobby → upper floors), lobby parking often cuts wait; under down-peak the same policy wastes empty travel and leaves upper halls uncovered.
+“배치” means **where to send a free car while it waits**, not shaft construction. In apartments, callers above floor 1 usually want the lobby; evening arrivals usually leave from the lobby to a home floor. Lobby-only parking can help ingress and hurt egress — and the reverse for stay/spread.
+
+## Traffic model (apartment default)
+
+| Period | Typical flow |
+| --- | --- |
+| Morning egress | Upper floors → lobby |
+| Evening ingress | Lobby → upper floors |
+| Midday / off-peak | Both directions, lower rate shape |
+
+Interfloor trips (upper↔upper) default to **10%** and are adjustable. Office any-floor OD is deferred as a later building-type switch.
 
 ## What you can compare
 
 | Control | Role |
 | --- | --- |
 | Parking strategy | Stay / Lobby / Mid / Spread / Demand |
-| Peak mode | Mixed / Up-peak / Down-peak / Lunch |
-| Building knobs | Floors, car count, capacity, arrival rate |
+| Traffic period | Morning / Evening / Midday |
+| Interfloor % | Share of non-lobby residential trips |
+| Door dwell | Stop time at each floor |
+| Building knobs | Floors, cars, capacity, arrival rate |
 
 ## Metrics
 
@@ -36,12 +48,12 @@ Elevator “배치” here means **where to send a free car while it waits**, no
 
 ## How it runs
 
-Each tick: spawn OD passengers by peak mode → assign nearest capable car → move / door dwell / board-alight → if idle, apply the selected parking policy. UI follows the boarding-sim pattern (strategy dropdown, sliders, Start/Pause/Reset, live dashboard).
+Each tick: spawn apartment OD passengers → assign nearest capable car → move / door dwell / board-alight → if idle, apply the selected parking policy.
 
 ## Tech stack
 
-Vanilla HTML · CSS · JavaScript (tick loop + DOM grid) · hosted under this site at `/elevator/`
+Vanilla HTML · CSS · JavaScript (tick loop + DOM grid) · hosted at `/elevator/`
 
 ## Next
 
-Richer OD matrices, passenger traits, zoning dispatch, and energy metrics — same control surface, deeper model.
+Building type (office), uneven floor population, car speed, batch arrivals — same control surface.
