@@ -150,7 +150,7 @@
                             <h2>Same scenario · strategy comparison</h2>
                             <p class="hint" id="compare-settings">Passenger arrivals are fixed. Only parking policy changes.</p>
                         </div>
-                        <button class="btn ghost" id="btn-compare-close" type="button" aria-label="Close comparison">Close</button>
+                        <button class="btn" id="btn-compare-close" type="button" aria-label="Close comparison">Close</button>
                     </div>
                     <div class="table-wrap">
                         <table id="compare-table">
@@ -169,29 +169,36 @@
                     </div>
                 </section>
                 <section class="compare-panel batch-panel" id="batch-panel" hidden>
-                    <div class="compare-head">
-                        <div>
-                            <h2>Batch Monte Carlo · strategy ranking</h2>
-                            <p class="hint compare-settings" id="batch-settings">—</p>
-                            <p class="hint" id="batch-progress" hidden></p>
+                    <div class="batch-top">
+                        <div class="batch-title-block">
+                            <p class="batch-kicker">Monte Carlo</p>
+                            <h2>Strategy ranking</h2>
+                            <div class="batch-meta" id="batch-settings" aria-live="polite">—</div>
                         </div>
                         <div class="batch-actions">
-                            <button class="btn" id="btn-batch-csv" type="button" disabled>Download CSV</button>
-                            <button class="btn" id="btn-batch-copy" type="button" disabled>Copy summary</button>
-                            <button class="btn ghost" id="btn-batch-close" type="button" aria-label="Close batch results">Close</button>
+                            <button class="btn" id="btn-batch-csv" type="button" disabled>CSV</button>
+                            <button class="btn" id="btn-batch-copy" type="button" disabled>Copy</button>
+                            <button class="btn" id="btn-batch-close" type="button" aria-label="Close batch results">Close</button>
                         </div>
                     </div>
-                    <div class="table-wrap">
+                    <div class="batch-progress-wrap" id="batch-progress-wrap" hidden>
+                        <div class="batch-progress-track" aria-hidden="true">
+                            <div class="batch-progress-fill" id="batch-progress-fill"></div>
+                        </div>
+                        <p class="batch-progress-label" id="batch-progress">Running…</p>
+                    </div>
+                    <div class="table-wrap batch-table-wrap">
                         <table id="batch-table">
                             <thead>
                                 <tr>
+                                    <th class="col-rank">#</th>
                                     <th>Strategy</th>
-                                    <th>Mean wait</th>
-                                    <th>Std wait</th>
-                                    <th>Mean empty</th>
-                                    <th>Mean ticks</th>
-                                    <th>Win %</th>
-                                    <th>Incomplete</th>
+                                    <th class="num">Wait</th>
+                                    <th class="num">±</th>
+                                    <th class="num">Empty</th>
+                                    <th class="num">Ticks</th>
+                                    <th class="col-win">Win rate</th>
+                                    <th class="num">Miss</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>

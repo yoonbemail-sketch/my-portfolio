@@ -1132,6 +1132,33 @@ function batchSettingsLine(n, baseSeed) {
     ].join(' · ');
 }
 
+function renderBatchSettings(n, baseSeed) {
+    const el = document.getElementById('batch-settings');
+    if (!el) return;
+    const chips = [
+        `N=${n}`,
+        `${baseSeed}–${baseSeed + n - 1}`,
+        peakMode,
+        `interfloor ${Math.round(interfloorRate * 100)}%`,
+        `dwell ${doorDwell}`,
+        `${floors}F`,
+        `${elevatorCount} cars`,
+        `cap ${capacity}`,
+        `arrival ${Math.round(arrivalRate * 100)}%`,
+        `target ${targetPassengers}`,
+    ];
+    el.innerHTML = chips.map(c => `<span class="chip">${c}</span>`).join('');
+}
+
+function setBatchProgress(done, total, label) {
+    const wrap = document.getElementById('batch-progress-wrap');
+    const fill = document.getElementById('batch-progress-fill');
+    const text = document.getElementById('batch-progress');
+    if (wrap) wrap.hidden = false;
+    if (fill) fill.style.width = `${total ? Math.min(100, (done / total) * 100) : 0}%`;
+    if (text) text.textContent = label;
+}
+
 function summarizeBatch(rows) {
     const byStrategy = {};
     for (const s of STRATEGIES) {
@@ -1240,22 +1267,29 @@ function renderBatchSummary(summary) {
     const tbody = document.querySelector('#batch-table tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    const bestWait = Math.min(...summary.map(s => s.meanWait));
-    for (const s of summary) {
+    const ranked = [...summary].sort((a, b) => a.meanWait - b.meanWait);
+    ranked.forEach((s, i) => {
         const tr = document.createElement('tr');
-        if (s.meanWait === bestWait) tr.classList.add('best-wait');
+        tr.classList.add(`rank-${i + 1}`);
         if (s.incomplete > 0) tr.classList.add('incomplete');
+        const win = Math.max(0, Math.min(100, s.winRate));
         tr.innerHTML = `
-            <td>${STRATEGY_LABELS[s.strategy]}</td>
+            <td class="col-rank">${i + 1}</td>
+            <td><span class="strategy-name">${STRATEGY_LABELS[s.strategy]}</span></td>
             <td class="num">${s.meanWait.toFixed(2)}</td>
             <td class="num">${s.stdWait.toFixed(2)}</td>
             <td class="num">${s.meanEmpty.toFixed(1)}</td>
             <td class="num">${s.meanTicks.toFixed(1)}</td>
-            <td class="num">${s.winRate.toFixed(0)}%</td>
+            <td class="col-win">
+                <div class="win-cell">
+                    <div class="win-bar" aria-hidden="true"><span style="width:${win}%"></span></div>
+                    <span class="win-pct">${s.winRate.toFixed(0)}%</span>
+                </div>
+            </td>
             <td class="num">${s.incomplete}</td>
         `;
         tbody.appendChild(tr);
-    }
+    });
 }
 
 function setBatchBusy(busy) {
@@ -1285,7 +1319,6 @@ async function runBatchCompare() {
     const savedStrategy = parkingStrategy;
     const panel = document.getElementById('batch-panel');
     const progress = document.getElementById('batch-progress');
-    const settingsEl = document.getElementById('batch-settings');
     const csvBtn = document.getElementById('btn-batch-csv');
     const copyBtn = document.getElementById('btn-batch-copy');
 
@@ -1293,11 +1326,8 @@ async function runBatchCompare() {
     lastBatchSummary = null;
     if (csvBtn) csvBtn.disabled = true;
     if (copyBtn) copyBtn.disabled = true;
-    if (settingsEl) settingsEl.textContent = batchSettingsLine(n, baseSeed);
-    if (progress) {
-        progress.hidden = false;
-        progress.textContent = `Running seed 0 / ${n}…`;
-    }
+    renderBatchSettings(n, baseSeed);
+    setBatchProgress(0, n, `Running seed 0 / ${n}…`);
     if (panel) {
         panel.hidden = false;
         panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -1341,13 +1371,13 @@ async function runBatchCompare() {
                 });
             }
 
-            if (progress) progress.textContent = `Running seed ${i + 1} / ${n}…`;
+            setBatchProgress(i + 1, n, `Running seed ${i + 1} / ${n}…`);
             if (i % 2 === 1 || i === n - 1) await yieldToUi();
         }
 
         lastBatchSummary = summarizeBatch(batchRows);
         renderBatchSummary(lastBatchSummary);
-        if (progress) progress.textContent = `Done · ${n} seeds · ${batchRows.length} rows`;
+        setBatchProgress(n, n, `Done · ${n} seeds · ${batchRows.length} rows`);
         if (csvBtn) csvBtn.disabled = false;
         if (copyBtn) copyBtn.disabled = false;
     } finally {
