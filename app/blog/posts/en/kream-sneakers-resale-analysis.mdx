@@ -16,29 +16,19 @@ Resale decisions need how often a model×size trades, at what price, and at what
 
 Playwright attaches to an already-logged-in Chrome and runs each product like this:
 
-<Table
-  data={{
-    headers: ['Step', 'What happens'],
-    rows: [
-      ['1', 'Start from a product page or the queue'],
-      ['2', 'Identify the model and expected volume per size'],
-      ['3', 'Collect only sizes that are still incomplete'],
-      ['4', 'Save size, price, date, delivery type to CSV'],
-      ['5', 'Merge by model → sales fact → Power BI'],
-    ],
-  }}
-/>
+| Step | What happens |
+| --- | --- |
+| 1 | Start from a product page or the queue |
+| 2 | Identify the model and expected volume per size |
+| 3 | Collect only sizes that are still incomplete |
+| 4 | Save size, price, date, delivery type to CSV |
+| 5 | Merge by model → sales fact → Power BI |
 
-<Table
-  data={{
-    headers: ['Run type', 'Description'],
-    rows: [
-      ['Single', 'The product open in the browser'],
-      ['Batch', 'Walk a queue of products unattended'],
-      ['Queue adder', 'Pull model / URL from the current tab into the list'],
-    ],
-  }}
-/>
+| Run type | Description |
+| --- | --- |
+| Single | The product open in the browser |
+| Batch | Walk a queue of products unattended |
+| Queue adder | Pull model / URL from the current tab into the list |
 
 ### Resume, update, fill gaps
 
@@ -50,69 +40,49 @@ If a run was interrupted, **resume** from a temp file. If the newest side is fil
 
 ### When something blocks the run
 
-<Table
-  data={{
-    headers: ['Situation', 'Response'],
-    rows: [
-      ['No new trades appear', 'Wait, reload, then retry remaining sizes'],
-      ['Session expired', 'Log in again and continue'],
-      ['Scroll looks stuck', 'Nudge upward; skip the size if it still fails'],
-      ['Wrong size or bad date', 'Drop those rows; stop that size if needed'],
-      ['Size volumes look wrong', 'Re-run size analysis'],
-      ['Volume is extremely high', 'Skip that size for safety'],
-    ],
-  }}
-/>
+| Situation | Response |
+| --- | --- |
+| No new trades appear | Wait, reload, then retry remaining sizes |
+| Session expired | Log in again and continue |
+| Scroll looks stuck | Nudge upward; skip the size if it still fails |
+| Wrong size or bad date | Drop those rows; stop that size if needed |
+| Size volumes look wrong | Re-run size analysis |
+| Volume is extremely high | Skip that size for safety |
 
 Batch mode: read the queue → fill missing sizes → merge and remove from the queue on success → notify on stalls or skips.
 
 ## Keeping the data clean
 
-<Table
-  data={{
-    headers: ['Rule', 'Why'],
-    rows: [
-      ['Size match check', 'Keep other sizes from mixing into a batch'],
-      ['Compare to expected volume', 'Decide whether a size is complete enough'],
-      ['Relative → absolute dates', 'Turn “3 hours ago” into real dates at fact export'],
-      ['Deduplicate on re-run', 'Keep only new trades'],
-      ['Master cache', 'Reuse brand, release date, retail, size mix'],
-      ['Split size keys', 'Same mm with different US labels stay separate'],
-    ],
-  }}
-/>
+| Rule | Why |
+| --- | --- |
+| Size match check | Keep other sizes from mixing into a batch |
+| Compare to expected volume | Decide whether a size is complete enough |
+| Relative → absolute dates | Turn “3 hours ago” into real dates at fact export |
+| Deduplicate on re-run | Keep only new trades |
+| Master cache | Reuse brand, release date, retail, size mix |
+| Split size keys | Same mm with different US labels stay separate |
 
 ## From CSV to fact
 
 One row = one trade.
 
-<Table
-  data={{
-    headers: ['Step', 'Output'],
-    rows: [
-      ['1', 'CSV per size'],
-      ['2', 'One merged file per model (+ SKU)'],
-      ['3', 'Cross-model sales_fact (SKU, Size, Price, Date, DeliveryType)'],
-    ],
-  }}
-/>
+| Step | Output |
+| --- | --- |
+| 1 | CSV per size |
+| 2 | One merged file per model (+ SKU) |
+| 3 | Cross-model sales_fact (SKU, Size, Price, Date, DeliveryType) |
 
 ## Data modeling (star schema)
 
 In Power BI, a trade fact joins product, brand, and date dimensions.
 
-<Table
-  data={{
-    headers: ['Table', 'Role'],
-    rows: [
-      ['fact_sales', 'One trade (SKU, Size, Price, DeliveryType, DateKey …)'],
-      ['dim_product', 'Model, names, category, retail, release date'],
-      ['dim_brand', 'Brand'],
-      ['dim_date', 'Date'],
-      ['What-if', 'Analysis period, profit target, Sales/Qty, signal toggles'],
-    ],
-  }}
-/>
+| Table | Role |
+| --- | --- |
+| fact_sales | One trade (SKU, Size, Price, DeliveryType, DateKey …) |
+| dim_product | Model, names, category, retail, release date |
+| dim_brand | Brand |
+| dim_date | Date |
+| What-if | Analysis period, profit target, Sales/Qty, signal toggles |
 
 Key measures: `%Average Premium`, `Daily Avg Price`, Bollinger / RSI / Trend signals, `KREAM Price Forecast`.
 
@@ -120,18 +90,13 @@ Key measures: `%Average Premium`, `Daily Avg Price`, Bollinger / RSI / Trend sig
 
 Instead of a public embed (free-license limit), the report pages are:
 
-<Table
-  data={{
-    headers: ['Page', 'Contents'],
-    rows: [
-      ['Overview', 'Sales, quantity, average premium; sales by date and brand'],
-      ['Price trend', 'Daily average price by brand / product / size'],
-      ['Signals', 'Quantity vs price, Bollinger bands, period / profit-target what-if'],
-      ['Premium by brand', 'Brand premium, retail vs resale, weekday vs weekend'],
-      ['Size heatmap', 'Size × brand premium, trend by delivery type'],
-    ],
-  }}
-/>
+| Page | Contents |
+| --- | --- |
+| Overview | Sales, quantity, average premium; sales by date and brand |
+| Price trend | Daily average price by brand / product / size |
+| Signals | Quantity vs price, Bollinger bands, period / profit-target what-if |
+| Premium by brand | Brand premium, retail vs resale, weekday vs weekend |
+| Size heatmap | Size × brand premium, trend by delivery type |
 
 Sample observations:
 
@@ -155,17 +120,12 @@ DIVIDE (
 
 ## Stack
 
-<Table
-  data={{
-    headers: ['Layer', 'Tools'],
-    rows: [
-      ['Collection', 'Python, Playwright (attach to Chrome)'],
-      ['Ops', 'Resume, incremental update, wait/retry on stalls, re-login'],
-      ['ETL', 'Per-size CSV → merge → sales_fact'],
-      ['Analytics', 'Power BI (star schema, DAX, what-if)'],
-    ],
-  }}
-/>
+| Layer | Tools |
+| --- | --- |
+| Collection | Python, Playwright (attach to Chrome) |
+| Ops | Resume, incremental update, wait/retry on stalls, re-login |
+| ETL | Per-size CSV → merge → sales_fact |
+| Analytics | Power BI (star schema, DAX, what-if) |
 
 ## Results
 
