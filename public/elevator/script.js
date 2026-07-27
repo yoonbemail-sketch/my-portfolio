@@ -1101,6 +1101,306 @@ function compareStrategies() {
     panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
+let batchRows = [];
+let batchRunning = false;
+let lastBatchSummary = null;
+
+function mean(arr) {
+    if (!arr.length) return 0;
+    return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function stdev(arr) {
+    if (arr.length < 2) return 0;
+    const m = mean(arr);
+    const v = arr.reduce((s, x) => s + (x - m) * (x - m), 0) / (arr.length - 1);
+    return Math.sqrt(v);
+}
+
+function batchSettingsLine(n, baseSeed) {
+    return [
+        `N=${n}`,
+        `seeds ${baseSeed}…${baseSeed + n - 1}`,
+        peakMode,
+        `interfloor ${Math.round(interfloorRate * 100)}%`,
+        `dwell ${doorDwell}`,
+        `${floors}F`,
+        `${elevatorCount} cars`,
+        `cap ${capacity}`,
+        `arrival ${Math.round(arrivalRate * 100)}%`,
+        `target ${targetPassengers}`,
+    ].join(' · ');
+}
+
+function summarizeBatch(rows) {
+    const byStrategy = {};
+    for (const s of STRATEGIES) {
+        byStrategy[s] = {
+            strategy: s,
+            waits: [],
+            empties: [],
+            ticks: [],
+            wins: 0,
+            incomplete: 0,
+            n: 0,
+        };
+    }
+
+    const bySeed = {};
+    for (const r of rows) {
+        if (!bySeed[r.seed]) bySeed[r.seed] = [];
+        bySeed[r.seed].push(r);
+        const bucket = byStrategy[r.strategy];
+        if (!bucket) continue;
+        bucket.n++;
+        bucket.waits.push(r.avgWait);
+        bucket.empties.push(r.emptyTravel);
+        bucket.ticks.push(r.ticks);
+        if (r.completed < r.target) bucket.incomplete++;
+    }
+
+    for (const seedRows of Object.values(bySeed)) {
+        let best = Infinity;
+        for (const r of seedRows) {
+            if (r.avgWait < best) best = r.avgWait;
+        }
+        for (const r of seedRows) {
+            if (r.avgWait === best) byStrategy[r.strategy].wins++;
+        }
+    }
+
+    const seedCount = Object.keys(bySeed).length || 1;
+    return STRATEGIES.map(s => {
+        const b = byStrategy[s];
+        return {
+            strategy: s,
+            meanWait: mean(b.waits),
+            stdWait: stdev(b.waits),
+            meanEmpty: mean(b.empties),
+            meanTicks: mean(b.ticks),
+            winRate: (b.wins / seedCount) * 100,
+            incomplete: b.incomplete,
+            n: b.n,
+        };
+    });
+}
+
+function formatBatchCsv(rows) {
+    const header = [
+        'seed', 'strategy', 'peak', 'interfloor', 'dwell', 'floors', 'elevators',
+        'capacity', 'arrival', 'target', 'trips', 'avgWait', 'maxWait',
+        'emptyTravel', 'ticks', 'completed',
+    ];
+    const lines = [header.join(',')];
+    for (const r of rows) {
+        lines.push([
+            r.seed, r.strategy, r.peak, r.interfloor, r.dwell, r.floors, r.elevators,
+            r.capacity, r.arrival, r.target, r.trips,
+            r.avgWait.toFixed(4), r.maxWait, r.emptyTravel, r.ticks, r.completed,
+        ].join(','));
+    }
+    return lines.join('\n') + '\n';
+}
+
+function formatBatchSummaryText(summary, n, baseSeed) {
+    const lines = [
+        'Elevator Parking — batch summary',
+        batchSettingsLine(n, baseSeed),
+        '',
+        'Ranked by mean avgWait:',
+    ];
+    const ranked = [...summary].sort((a, b) => a.meanWait - b.meanWait);
+    ranked.forEach((s, i) => {
+        lines.push(
+            `${i + 1}. ${STRATEGY_LABELS[s.strategy]}  ` +
+            `wait ${s.meanWait.toFixed(2)}±${s.stdWait.toFixed(2)}  ` +
+            `empty ${s.meanEmpty.toFixed(1)}  ` +
+            `ticks ${s.meanTicks.toFixed(1)}  ` +
+            `win ${s.winRate.toFixed(0)}%  ` +
+            `incomplete ${s.incomplete}`
+        );
+    });
+    lines.push('');
+    return lines.join('\n');
+}
+
+function downloadCsv(rows) {
+    const blob = new Blob([formatBatchCsv(rows)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `elevator-batch-${scenarioSeed}-n${rows.length / STRATEGIES.length}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+function renderBatchSummary(summary) {
+    const tbody = document.querySelector('#batch-table tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    const bestWait = Math.min(...summary.map(s => s.meanWait));
+    for (const s of summary) {
+        const tr = document.createElement('tr');
+        if (s.meanWait === bestWait) tr.classList.add('best-wait');
+        if (s.incomplete > 0) tr.classList.add('incomplete');
+        tr.innerHTML = `
+            <td>${STRATEGY_LABELS[s.strategy]}</td>
+            <td class="num">${s.meanWait.toFixed(2)}</td>
+            <td class="num">${s.stdWait.toFixed(2)}</td>
+            <td class="num">${s.meanEmpty.toFixed(1)}</td>
+            <td class="num">${s.meanTicks.toFixed(1)}</td>
+            <td class="num">${s.winRate.toFixed(0)}%</td>
+            <td class="num">${s.incomplete}</td>
+        `;
+        tbody.appendChild(tr);
+    }
+}
+
+function setBatchBusy(busy) {
+    batchRunning = busy;
+    const btn = document.getElementById('btn-batch');
+    if (btn) btn.disabled = busy;
+    const nInput = document.getElementById('batch-n');
+    if (nInput) nInput.disabled = busy;
+    document.getElementById('btn-compare').disabled = busy;
+}
+
+function yieldToUi() {
+    return new Promise(resolve => setTimeout(resolve, 0));
+}
+
+async function runBatchCompare() {
+    if (batchRunning) return;
+    stopSim();
+    readControls();
+
+    const nInput = document.getElementById('batch-n');
+    let n = nInput ? Number(nInput.value) : 100;
+    if (!Number.isFinite(n)) n = 100;
+    n = clamp(Math.floor(n), 1, 200);
+
+    const baseSeed = scenarioSeed;
+    const savedStrategy = parkingStrategy;
+    const panel = document.getElementById('batch-panel');
+    const progress = document.getElementById('batch-progress');
+    const settingsEl = document.getElementById('batch-settings');
+    const csvBtn = document.getElementById('btn-batch-csv');
+    const copyBtn = document.getElementById('btn-batch-copy');
+
+    batchRows = [];
+    lastBatchSummary = null;
+    if (csvBtn) csvBtn.disabled = true;
+    if (copyBtn) copyBtn.disabled = true;
+    if (settingsEl) settingsEl.textContent = batchSettingsLine(n, baseSeed);
+    if (progress) {
+        progress.hidden = false;
+        progress.textContent = `Running seed 0 / ${n}…`;
+    }
+    if (panel) {
+        panel.hidden = false;
+        panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    const tbody = document.querySelector('#batch-table tbody');
+    if (tbody) tbody.innerHTML = '';
+
+    setBatchBusy(true);
+
+    try {
+        for (let i = 0; i < n; i++) {
+            scenarioSeed = baseSeed + i;
+            const seedInput = document.getElementById('seed-input');
+            if (seedInput) seedInput.value = String(scenarioSeed);
+            scenarioKey = '';
+            ensureScenario(true);
+
+            const meta = {
+                seed: scenarioSeed,
+                peak: peakMode,
+                interfloor: Math.round(interfloorRate * 100),
+                dwell: doorDwell,
+                floors,
+                elevators: elevatorCount,
+                capacity,
+                arrival: Math.round(arrivalRate * 100),
+                target: targetPassengers,
+                trips: scenario.length,
+            };
+
+            for (const strategy of STRATEGIES) {
+                const m = runHeadless(strategy);
+                batchRows.push({
+                    ...meta,
+                    strategy: m.strategy,
+                    avgWait: m.avgWait,
+                    maxWait: m.maxWait,
+                    emptyTravel: m.emptyTravel,
+                    ticks: m.ticks,
+                    completed: m.completed,
+                });
+            }
+
+            if (progress) progress.textContent = `Running seed ${i + 1} / ${n}…`;
+            if (i % 2 === 1 || i === n - 1) await yieldToUi();
+        }
+
+        lastBatchSummary = summarizeBatch(batchRows);
+        renderBatchSummary(lastBatchSummary);
+        if (progress) progress.textContent = `Done · ${n} seeds · ${batchRows.length} rows`;
+        if (csvBtn) csvBtn.disabled = false;
+        if (copyBtn) copyBtn.disabled = false;
+    } finally {
+        document.getElementById('strategy-select').value = savedStrategy;
+        parkingStrategy = savedStrategy;
+        scenarioSeed = baseSeed;
+        const seedInput = document.getElementById('seed-input');
+        if (seedInput) seedInput.value = String(baseSeed);
+        scenarioKey = '';
+        ensureScenario(true);
+        resetRuntimeState();
+        initBuildingDOM();
+        render();
+        updateDashboard();
+        updatePlayLabel();
+        setBatchBusy(false);
+    }
+}
+
+async function copyBatchSummary() {
+    if (!lastBatchSummary || !batchRows.length) return;
+    const n = batchRows.length / STRATEGIES.length;
+    const baseSeed = batchRows[0].seed;
+    const text = formatBatchSummaryText(lastBatchSummary, n, baseSeed);
+    const btn = document.getElementById('btn-batch-copy');
+    const label = btn ? btn.textContent : 'Copy summary';
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(text);
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        if (btn) {
+            btn.textContent = 'Copied';
+            setTimeout(() => { btn.textContent = label; }, 1200);
+        }
+    } catch (err) {
+        console.error(err);
+        if (btn) {
+            btn.textContent = 'Copy failed';
+            setTimeout(() => { btn.textContent = label; }, 1500);
+        }
+    }
+}
+
 function bindRange(id, valId, fmt) {
     const el = document.getElementById(id);
     const val = document.getElementById(valId);
@@ -1203,6 +1503,14 @@ document.getElementById('btn-compare').addEventListener('click', compareStrategi
 document.getElementById('btn-compare-close').addEventListener('click', () => {
     document.getElementById('compare-panel').hidden = true;
 });
+document.getElementById('btn-batch').addEventListener('click', () => { runBatchCompare(); });
+document.getElementById('btn-batch-close').addEventListener('click', () => {
+    document.getElementById('batch-panel').hidden = true;
+});
+document.getElementById('btn-batch-csv').addEventListener('click', () => {
+    if (batchRows.length) downloadCsv(batchRows);
+});
+document.getElementById('btn-batch-copy').addEventListener('click', () => { copyBatchSummary(); });
 
 document.getElementById('strategy-select').addEventListener('change', () => {
     parkingStrategy = document.getElementById('strategy-select').value;

@@ -31,6 +31,10 @@
                 <button class="btn" id="btn-reset" type="button">Replay</button>
                 <button class="btn" id="btn-copy-debug" type="button" title="Copy seed, settings, and current sim state">Copy debug</button>
                 <button class="btn" id="btn-compare" type="button">Compare all</button>
+                <button class="btn" id="btn-batch" type="button" title="Monte Carlo over N seeds">Batch</button>
+                <label class="batch-n-label" for="batch-n">N
+                    <input type="number" id="batch-n" min="1" max="200" value="100" title="Number of seeds">
+                </label>
                 <button class="btn ghost mobile-toggle" id="mobile-toggle" type="button" aria-label="Toggle controls" aria-expanded="false" aria-controls="sim-controls">Controls</button>
             </div>
         </header>
@@ -158,6 +162,36 @@
                                     <th>Empty</th>
                                     <th>Ticks</th>
                                     <th>Done</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </section>
+                <section class="compare-panel batch-panel" id="batch-panel" hidden>
+                    <div class="compare-head">
+                        <div>
+                            <h2>Batch Monte Carlo · strategy ranking</h2>
+                            <p class="hint compare-settings" id="batch-settings">—</p>
+                            <p class="hint" id="batch-progress" hidden></p>
+                        </div>
+                        <div class="batch-actions">
+                            <button class="btn" id="btn-batch-csv" type="button" disabled>Download CSV</button>
+                            <button class="btn" id="btn-batch-copy" type="button" disabled>Copy summary</button>
+                            <button class="btn ghost" id="btn-batch-close" type="button" aria-label="Close batch results">Close</button>
+                        </div>
+                    </div>
+                    <div class="table-wrap">
+                        <table id="batch-table">
+                            <thead>
+                                <tr>
+                                    <th>Strategy</th>
+                                    <th>Mean wait</th>
+                                    <th>Std wait</th>
+                                    <th>Mean empty</th>
+                                    <th>Mean ticks</th>
+                                    <th>Win %</th>
+                                    <th>Incomplete</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>

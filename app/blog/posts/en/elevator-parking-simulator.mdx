@@ -35,6 +35,24 @@ In a **saturated** building, cars rarely park — they stay in service — so pa
 
 This demo isolates parking on a fixed passenger stream. Push arrival rate up in Compare all; shrinking gaps between strategies is a clue that zoning, not parking, is the next experiment when the bank is always busy.
 
+## Strategy catalog
+
+There is **no single best parking policy**. Rankings depend on traffic — the same way airplane boarding methods (WilMA, back-to-front, random) trade off under different constraints.
+
+| Strategy | Idle placement | Typical fit |
+| --- | --- | --- |
+| Stay | Last floor | Reactive baseline |
+| Lobby | Floor 1 | Up-peak / ingress |
+| Mid | Mid-building | Compromise |
+| Spread | Even homes along the shaft | Down-peak / egress |
+| Demand | Recent call heat | Adaptive heuristic |
+
+Research directions (future code): arrival-probability parking, MDP lobby-car counts for up-peak, proactive standby scores, and **service zoning** when saturated.
+
+## Batch experiment
+
+In the demo, **Batch N** (default 100) runs seeds `base … base+N−1` with the current traffic knobs, every parking strategy headless, then shows mean wait / empty travel / win-rate and a downloadable CSV. Same base seed → deterministic repeat. Use it to see which baseline wins *for this regime*, not “the” global optimum.
+
 ## Building view
 
 `Out | Floors | Elevators | Hall` — alighted passengers on the left, waiting hall calls on the right. Hover dots or cars for trip / panel details. Cars use collective **SCAN** boarding (finish one direction before reversing).
