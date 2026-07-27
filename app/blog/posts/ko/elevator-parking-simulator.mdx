@@ -33,13 +33,29 @@ summary: '아파트 엘리베이터 파킹 시뮬 — 승객 시나리오를 고
 
 ## 트래픽 모델 (아파트 기본)
 
-| 시간대 | 전형적 흐름 |
-| --- | --- |
-| Morning egress | 상부 → 로비 |
-| Evening ingress | 로비 → 상부 |
-| Midday / off-peak | 양방향 |
+시드 + 트래픽 노브로 승객 OD를 한 번 만들고, Replay / Compare all에서 재사용합니다.
 
-Interfloor 기본 **10%**. 도착은 틱마다 Bernoulli(이산 Poisson 근사). 오피스형 OD는 이후 분리.
+### Traffic period
+
+**출발층 믹스**를 고릅니다.
+
+| 시간대 | 출발 분포 (대략) | 이야기 |
+| --- | --- | --- |
+| Morning egress | 상부 ~90% / 로비 ~10% | 외출·출근 |
+| Evening ingress | 로비 ~90% / 상부 ~10% | 귀가 |
+| Midday / off-peak | 로비 ~45% / 상부 ~55% | 주간 혼재 |
+
+목적지는 아래 아파트 규칙을 따릅니다.
+
+### Arrival rate
+
+틱마다 **최대 1명**이 등장할 확률(Bernoulli). 기본 **15%** ≈ 약 6.7틱에 1명. Poisson 도착의 이산 근사. 값을 올리면 동시 홀콜이 많아집니다.
+
+### Interfloor trips
+
+**상부 출발**일 때 목적지가 로비가 아니라 **다른 상부층**일 확률(기본 **10%**). 로비 출발은 항상 상부. 낮추면 로비 상하행 위주, 높이면 중간층 정차가 늘어납니다.
+
+오피스형 임의 OD는 이후 분리.
 
 ## 컨트롤
 
@@ -47,9 +63,11 @@ Interfloor 기본 **10%**. 도착은 틱마다 Bernoulli(이산 Poisson 근사).
 | --- | --- |
 | Parking strategy | Stay / Lobby / Mid / Spread / Demand |
 | Scenario seed | 고정 승객 스트림 |
-| Traffic period | Morning / Evening / Midday |
-| Interfloor % / Door dwell | 층간 통행 / 정차 시간 |
-| 건물 파라미터 | 층수, 대수, 정원, 도착률 |
+| Traffic period | 출발층 믹스 (morning / evening / midday) |
+| Arrival rate | 틱당 Bernoulli 도착 확률 |
+| Interfloor % | 상부→상부 확률 (아니면 로비) |
+| Door dwell | 층 정차 시간 |
+| 건물 파라미터 | 층수, 대수, 정원, 목표 인원 |
 
 ## 지표
 

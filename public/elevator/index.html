@@ -85,10 +85,12 @@
                         <option value="evening" selected>Evening ingress (lobby → upper)</option>
                         <option value="midday">Midday / off-peak</option>
                     </select>
+                    <p class="hint">Where trips start: morning ~90% from upper floors, evening ~90% from lobby, midday mixed.</p>
                 </div>
                 <div class="field">
                     <label for="interfloor-range">Interfloor trips <span id="interfloor-val">10%</span></label>
                     <input type="range" id="interfloor-range" min="0" max="40" value="10">
+                    <p class="hint">If starting upstairs, chance of going to another upper floor instead of the lobby.</p>
                 </div>
                 <div class="field">
                     <label for="dwell-range">Door dwell (ticks) <span id="dwell-val">2</span></label>
@@ -109,6 +111,7 @@
                 <div class="field">
                     <label for="arrival-range">Arrival rate <span id="arrival-val">15%</span></label>
                     <input type="range" id="arrival-range" min="5" max="40" value="15">
+                    <p class="hint">Per-tick chance a passenger appears (Bernoulli; ≤1 per tick). 15% ≈ one every ~7 ticks.</p>
                 </div>
                 <div class="field">
                     <label for="target-range">Target passengers <span id="target-val">80</span></label>

@@ -33,13 +33,29 @@ Where should idle elevators wait in an **apartment**? This tick-based simulator 
 
 ## Traffic model (apartment default)
 
-| Period | Typical flow |
-| --- | --- |
-| Morning egress | Upper floors → lobby |
-| Evening ingress | Lobby → upper floors |
-| Midday / off-peak | Both directions |
+Passenger OD is generated once from the seed + traffic knobs, then reused for Replay / Compare all.
 
-Interfloor trips default to **10%**. Arrivals are Bernoulli per tick (discrete Poisson-like). Office any-floor OD is deferred.
+### Traffic period
+
+Controls **origin mix** (where people appear):
+
+| Period | Origin mix (approx.) | Story |
+| --- | --- | --- |
+| Morning egress | ~90% upper, ~10% lobby | Leaving the building |
+| Evening ingress | ~90% lobby, ~10% upper | Coming home |
+| Midday / off-peak | ~45% lobby, ~55% upper | Mixed daytime |
+
+Destinations still follow apartment rules below.
+
+### Arrival rate
+
+Per-tick probability that **one** passenger is created (Bernoulli, at most one per tick). Default **15%** ≈ an arrival every ~6.7 ticks. Discrete stand-in for Poisson arrivals — denser rate means more concurrent hall calls.
+
+### Interfloor trips
+
+If a trip starts on an upper floor, chance the destination is **another upper floor** instead of the lobby (default **10%**). Lobby starts always go upstairs. Low values ≈ pure up/down to lobby; higher values add mid-building stops.
+
+Office any-floor OD is deferred.
 
 ## Controls
 
@@ -47,9 +63,11 @@ Interfloor trips default to **10%**. Arrivals are Bernoulli per tick (discrete P
 | --- | --- |
 | Parking strategy | Stay / Lobby / Mid / Spread / Demand |
 | Scenario seed | Fixed passenger stream |
-| Traffic period | Morning / Evening / Midday |
-| Interfloor % / Door dwell | Residential OD / stop time |
-| Building knobs | Floors, cars, capacity, arrival rate |
+| Traffic period | Origin mix (morning / evening / midday) |
+| Arrival rate | Per-tick Bernoulli arrival probability |
+| Interfloor % | Upper→upper chance instead of lobby |
+| Door dwell | Stop time at each floor |
+| Building knobs | Floors, cars, capacity, target passengers |
 
 ## Metrics
 
