@@ -31,7 +31,6 @@ let waiting = [];
 /** Passengers who finished their trip, grouped visually by alight floor */
 let alighted = [];
 let completedWaits = [];
-let completedRides = [];
 let emptyTravel = 0;
 let completedCount = 0;
 let callHeat = {};
@@ -67,7 +66,6 @@ class Elevator {
         this.homeFloor = homeFloor;
         this.dir = 0;
         this.passengers = [];
-        this.targets = new Set();
         this.assigned = [];
         this.doorTicks = 0;
         this.state = 'IDLE';
@@ -240,12 +238,6 @@ function costToServe(elev, passenger) {
     return dist + loadPenalty + doorPenalty + dirPenalty + busyPenalty;
 }
 
-function syncTargets(elev) {
-    elev.targets.clear();
-    for (const p of elev.passengers) elev.targets.add(p.dest);
-    for (const p of elev.assigned) elev.targets.add(p.origin);
-}
-
 function getStopFloors(elev) {
     const stops = new Set();
     for (const p of elev.passengers) stops.add(p.dest);
@@ -337,7 +329,6 @@ function assignCalls() {
         }
         if (best) {
             best.assigned.push(p);
-            syncTargets(best);
             if (best.state === 'PARKING') {
                 best.parkingTarget = null;
                 best.state = 'MOVING';
@@ -356,7 +347,6 @@ function openDoors(elev) {
         if (p.dest === elev.floor) {
             p.state = 'DONE';
             completedCount++;
-            completedRides.push(tickCount - p.boardTick);
             completedWaits.push(p.boardTick - p.arriveTick);
             alighted.push({
                 id: p.id,
@@ -407,7 +397,6 @@ function openDoors(elev) {
         elev.passengers.push(p);
     }
 
-    syncTargets(elev);
     elev.dir = chooseDirection(elev);
 }
 
@@ -415,7 +404,6 @@ function stepElevator(elev) {
     if (elev.doorTicks > 0) {
         elev.doorTicks--;
         if (elev.doorTicks === 0) {
-            syncTargets(elev);
             if (hasWork(elev)) {
                 elev.state = 'MOVING';
                 elev.parkingTarget = null;
@@ -526,7 +514,6 @@ function resetRuntimeState() {
     tickCount = 0;
     waiting = [];
     completedWaits = [];
-    completedRides = [];
     emptyTravel = 0;
     completedCount = 0;
     callHeat = {};
@@ -598,7 +585,7 @@ function paxTip(p) {
 }
 
 function alightedTip(p) {
-    return `#${p.id}  ·  ${floorLabel(p.origin)} → ${floorLabel(p.dest)}\nArrived @ ${floorLabel(p.floor)}`;
+    return `#${p.id}  ·  ${floorLabel(p.origin)} → ${floorLabel(p.dest)}\nArrived @ ${floorLabel(p.floor)} · t=${p.alightTick}`;
 }
 
 function elevPanelTip(elev) {
@@ -655,14 +642,14 @@ function hideTip() {
 }
 
 function bindTip(el, textFn, opts = {}) {
-    el.addEventListener('mouseenter', (e) => {
+    const apply = (e) => {
         if (opts.stop) e.stopPropagation();
-        showTip(textFn(), e.clientX, e.clientY);
-    });
-    el.addEventListener('mousemove', (e) => {
-        if (opts.stop) e.stopPropagation();
-        showTip(textFn(), e.clientX, e.clientY);
-    });
+        const text = textFn();
+        el.title = text;
+        showTip(text, e.clientX, e.clientY);
+    };
+    el.addEventListener('mouseenter', apply);
+    el.addEventListener('mousemove', apply);
     el.addEventListener('mouseleave', (e) => {
         if (opts.stop) e.stopPropagation();
         hideTip();
@@ -781,8 +768,17 @@ function updateDashboard() {
     document.getElementById('stat-max-wait').textContent = String(m.maxWait);
     document.getElementById('stat-completed').textContent = `${m.completed} / ${targetPassengers}`;
     document.getElementById('stat-empty').textContent = String(m.emptyTravel);
+    const ticksEl = document.getElementById('stat-ticks');
+    if (ticksEl) ticksEl.textContent = String(m.ticks);
     document.getElementById('progress-fill').style.width =
         `${Math.min(100, (m.completed / targetPassengers) * 100)}%`;
+}
+
+function updatePlayLabel() {
+    const btn = document.getElementById('btn-play');
+    if (!btn) return;
+    const canResume = !isRunning && tickCount > 0 && completedCount < targetPassengers;
+    btn.textContent = canResume ? 'Resume' : 'Start';
 }
 
 function updateScenarioLabel() {
@@ -815,6 +811,7 @@ function resetSimulation(opts = {}) {
     initBuildingDOM();
     render();
     updateDashboard();
+    updatePlayLabel();
     document.getElementById('btn-play').disabled = false;
     document.getElementById('btn-pause').disabled = true;
 }
@@ -834,6 +831,7 @@ function startSim() {
     intervalId = setInterval(gameLoop, tickDelay);
     document.getElementById('btn-play').disabled = true;
     document.getElementById('btn-pause').disabled = false;
+    updatePlayLabel();
 }
 
 function stopSim() {
@@ -844,6 +842,7 @@ function stopSim() {
     }
     document.getElementById('btn-play').disabled = false;
     document.getElementById('btn-pause').disabled = true;
+    updatePlayLabel();
 }
 
 /** Run one strategy against the current scenario with no animation. */
@@ -881,6 +880,7 @@ function compareStrategies() {
     for (const r of results) {
         const tr = document.createElement('tr');
         if (r.avgWait === bestWait) tr.classList.add('best-wait');
+        if (r.completed < targetPassengers) tr.classList.add('incomplete');
         tr.innerHTML = `
             <td>${STRATEGY_LABELS[r.strategy]}</td>
             <td class="num">${r.avgWait.toFixed(1)}</td>
@@ -891,7 +891,9 @@ function compareStrategies() {
         `;
         tbody.appendChild(tr);
     }
-    document.getElementById('compare-panel').hidden = false;
+    const panel = document.getElementById('compare-panel');
+    panel.hidden = false;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function bindRange(id, valId, fmt) {
@@ -935,6 +937,9 @@ document.getElementById('btn-new-scenario').addEventListener('click', () => {
     resetSimulation({ newScenario: true });
 });
 document.getElementById('btn-compare').addEventListener('click', compareStrategies);
+document.getElementById('btn-compare-close').addEventListener('click', () => {
+    document.getElementById('compare-panel').hidden = true;
+});
 
 document.getElementById('strategy-select').addEventListener('change', () => {
     parkingStrategy = document.getElementById('strategy-select').value;
@@ -972,7 +977,9 @@ document.getElementById('sim-speed').addEventListener('input', () => {
 });
 
 document.getElementById('mobile-toggle').addEventListener('click', () => {
-    document.getElementById('sim-controls').classList.toggle('open');
+    const controls = document.getElementById('sim-controls');
+    const open = controls.classList.toggle('open');
+    document.getElementById('mobile-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
 });
 
 try {

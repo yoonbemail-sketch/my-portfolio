@@ -20,12 +20,16 @@ summary: '아파트 엘리베이터 파킹 시뮬 — 승객 시나리오를 고
 
 1. 트래픽 입력 + **scenario seed**로 승객 스트림 하나 생성
 2. **Replay**는 같은 스트림 재실행
-3. **Compare all**은 그 스트림으로 모든 파킹 전략을 일괄 실행
+3. **Compare all**은 브라우저에서 headless로 모든 파킹 전략을 일괄 실행
 4. 다른 세상을 보고 싶을 때만 seed / New
 
 ## 질문
 
 ‘배치’는 **빈 차를 어느 층에 대기시킬지**입니다. 도착이 같으면 로비 파킹 vs stay/spread 차이가 avg wait·empty travel에 바로 드러납니다.
+
+## 건물 뷰
+
+`Out | Fl | E1… | Hall` — 왼쪽은 내린 승객, 오른쪽은 홀 대기. 점·엘리베이터에 호버하면 경로/패널 정보가 뜹니다. 탑승은 collective **SCAN**(한 방향을 끝낸 뒤 반전).
 
 ## 트래픽 모델 (아파트 기본)
 
@@ -35,7 +39,7 @@ summary: '아파트 엘리베이터 파킹 시뮬 — 승객 시나리오를 고
 | Evening ingress | 로비 → 상부 |
 | Midday / off-peak | 양방향 |
 
-Interfloor 기본 **10%**. 오피스형 OD는 이후 분리.
+Interfloor 기본 **10%**. 도착은 틱마다 Bernoulli(이산 Poisson 근사). 오피스형 OD는 이후 분리.
 
 ## 컨트롤
 
@@ -49,8 +53,8 @@ Interfloor 기본 **10%**. 오피스형 OD는 이후 분리.
 
 ## 지표
 
-- **Avg / Max wait**
-- **Empty travel**
+- **Avg / Max wait (ticks)**
+- **Empty travel (floors)**
 - **Ticks / Completed**
 
 ## Tech stack
