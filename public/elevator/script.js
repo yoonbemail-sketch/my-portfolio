@@ -299,9 +299,7 @@ function shouldStopAtFloor(elev) {
 
 function canBoardPassenger(elev, passenger) {
     if (passenger.origin !== elev.floor) return false;
-    if (elev.passengers.length + elev.assigned.filter(p => p.origin === elev.floor).length >= capacity) {
-        return false;
-    }
+    if (passenger.state !== 'WAITING') return false;
     if (elev.dir === 0) return true;
     if (elev.dir === 1) return passenger.dest > elev.floor;
     return passenger.dest < elev.floor;
@@ -353,18 +351,23 @@ function openDoors(elev) {
     elev.passengers = staying;
 
     const canBoard = [];
+    const seen = new Set();
+
     elev.assigned = elev.assigned.filter(p => {
-        if (p.origin === elev.floor && p.state === 'WAITING') {
+        if (p.origin === elev.floor && p.state === 'WAITING' && !seen.has(p.id)) {
             canBoard.push(p);
+            seen.add(p.id);
             return false;
         }
         return true;
     });
 
     for (const p of unassignedWaiting()) {
+        if (seen.has(p.id)) continue;
         if (!canBoardPassenger(elev, p)) continue;
         if (elev.passengers.length + canBoard.length >= capacity) break;
         canBoard.push(p);
+        seen.add(p.id);
     }
 
     for (const p of canBoard) {
