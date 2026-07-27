@@ -13,13 +13,14 @@
     --idle: #d4d4d4;
     --parking: #a3a3a3;
     --doors: #737373;
+    --alighted: #a3a3a3;
     --font: "Geist Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
     --mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 @font-face {
     font-family: "Geist Sans";
-    src: url("/elevator/fonts/Geist-Variable.woff2") format("woff2");
+    src: url("./fonts/Geist-Variable.woff2") format("woff2");
     font-weight: 100 900;
     font-style: normal;
     font-display: swap;
@@ -27,7 +28,7 @@
 
 @font-face {
     font-family: "Geist Mono";
-    src: url("/elevator/fonts/GeistMono-Variable.woff2") format("woff2");
+    src: url("./fonts/GeistMono-Variable.woff2") format("woff2");
     font-weight: 100 900;
     font-style: normal;
     font-display: swap;
@@ -49,6 +50,7 @@
         --idle: #404040;
         --parking: #737373;
         --doors: #a3a3a3;
+        --alighted: #737373;
     }
 
     html {
@@ -362,11 +364,12 @@ input[type="range"] {
 
 .building {
     display: grid;
-    grid-template-columns: 40px repeat(var(--shaft-count, 4), minmax(48px, 1fr)) minmax(88px, 1.3fr);
+    grid-template-columns: minmax(72px, 0.9fr) 40px repeat(var(--shaft-count, 4), minmax(48px, 1fr)) minmax(88px, 1.3fr);
     width: 100%;
     min-height: 100%;
 }
 
+.alighted-header,
 .corner-header,
 .shaft-header,
 .hall-header {
@@ -386,8 +389,13 @@ input[type="range"] {
     padding: 0.55rem 0.25rem;
 }
 
-.corner-header {
+.alighted-header {
     left: 0;
+    z-index: 4;
+}
+
+.corner-header {
+    left: 72px;
     z-index: 4;
 }
 
@@ -402,7 +410,7 @@ input[type="range"] {
     border-bottom: 1px solid var(--border);
     background: var(--panel);
     position: sticky;
-    left: 0;
+    left: 72px;
     z-index: 2;
     font-variant-numeric: tabular-nums;
 }
@@ -470,12 +478,14 @@ input[type="range"] {
 
 .car-count,
 .car-more,
-.hall-more {
+.hall-more,
+.alighted-more {
     font-size: 0.6rem;
     font-family: var(--mono);
     opacity: 0.85;
 }
 
+.alighted-cell,
 .hall-cell {
     border-bottom: 1px solid var(--border);
     border-left: 1px solid var(--border);
@@ -485,6 +495,13 @@ input[type="range"] {
     align-items: center;
     gap: 3px;
     min-height: 30px;
+}
+
+.alighted-cell {
+    background: var(--panel);
+    position: sticky;
+    left: 0;
+    z-index: 1;
 }
 
 .pax {
@@ -497,6 +514,11 @@ input[type="range"] {
 
 .pax.waiting {
     background: var(--waiting);
+}
+
+.pax.alighted {
+    background: var(--alighted);
+    opacity: 0.85;
 }
 
 .pax.riding {
@@ -552,6 +574,11 @@ input[type="range"] {
 .swatch.waiting {
     border-radius: 999px;
     background: var(--waiting);
+}
+
+.swatch.alighted {
+    border-radius: 999px;
+    background: var(--alighted);
 }
 
 .swatch.riding {
