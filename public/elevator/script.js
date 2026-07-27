@@ -1104,6 +1104,38 @@ function compareStrategies() {
 let batchRows = [];
 let batchRunning = false;
 let lastBatchSummary = null;
+let batchRankMetric = 'avgWait';
+
+const RANK_METRICS = {
+    avgWait: {
+        label: 'avg wait',
+        rowKey: 'avgWait',
+        meanKey: 'meanWait',
+        stdKey: 'stdWait',
+        colIndex: 2,
+    },
+    maxWait: {
+        label: 'max wait',
+        rowKey: 'maxWait',
+        meanKey: 'meanMaxWait',
+        stdKey: 'stdMaxWait',
+        colIndex: 4,
+    },
+    emptyTravel: {
+        label: 'empty travel',
+        rowKey: 'emptyTravel',
+        meanKey: 'meanEmpty',
+        stdKey: 'stdEmpty',
+        colIndex: 5,
+    },
+    ticks: {
+        label: 'ticks',
+        rowKey: 'ticks',
+        meanKey: 'meanTicks',
+        stdKey: 'stdTicks',
+        colIndex: 6,
+    },
+};
 
 function mean(arr) {
     if (!arr.length) return 0;
@@ -1159,12 +1191,14 @@ function setBatchProgress(done, total, label) {
     if (text) text.textContent = label;
 }
 
-function summarizeBatch(rows) {
+function summarizeBatch(rows, metric = batchRankMetric) {
+    const cfg = RANK_METRICS[metric] || RANK_METRICS.avgWait;
     const byStrategy = {};
     for (const s of STRATEGIES) {
         byStrategy[s] = {
             strategy: s,
             waits: [],
+            maxWaits: [],
             empties: [],
             ticks: [],
             wins: 0,
@@ -1181,6 +1215,7 @@ function summarizeBatch(rows) {
         if (!bucket) continue;
         bucket.n++;
         bucket.waits.push(r.avgWait);
+        bucket.maxWaits.push(r.maxWait);
         bucket.empties.push(r.emptyTravel);
         bucket.ticks.push(r.ticks);
         if (r.completed < r.target) bucket.incomplete++;
@@ -1189,10 +1224,11 @@ function summarizeBatch(rows) {
     for (const seedRows of Object.values(bySeed)) {
         let best = Infinity;
         for (const r of seedRows) {
-            if (r.avgWait < best) best = r.avgWait;
+            const v = r[cfg.rowKey];
+            if (v < best) best = v;
         }
         for (const r of seedRows) {
-            if (r.avgWait === best) byStrategy[r.strategy].wins++;
+            if (r[cfg.rowKey] === best) byStrategy[r.strategy].wins++;
         }
     }
 
@@ -1203,11 +1239,16 @@ function summarizeBatch(rows) {
             strategy: s,
             meanWait: mean(b.waits),
             stdWait: stdev(b.waits),
+            meanMaxWait: mean(b.maxWaits),
+            stdMaxWait: stdev(b.maxWaits),
             meanEmpty: mean(b.empties),
+            stdEmpty: stdev(b.empties),
             meanTicks: mean(b.ticks),
+            stdTicks: stdev(b.ticks),
             winRate: (b.wins / seedCount) * 100,
             incomplete: b.incomplete,
             n: b.n,
+            metric,
         };
     });
 }
@@ -1230,17 +1271,20 @@ function formatBatchCsv(rows) {
 }
 
 function formatBatchSummaryText(summary, n, baseSeed) {
+    const cfg = RANK_METRICS[batchRankMetric] || RANK_METRICS.avgWait;
     const lines = [
         'Elevator Parking — batch summary',
         batchSettingsLine(n, baseSeed),
+        `objective: minimize ${cfg.label}`,
         '',
-        'Ranked by mean avgWait:',
+        `Ranked by mean ${cfg.label}:`,
     ];
-    const ranked = [...summary].sort((a, b) => a.meanWait - b.meanWait);
+    const ranked = [...summary].sort((a, b) => a[cfg.meanKey] - b[cfg.meanKey]);
     ranked.forEach((s, i) => {
         lines.push(
             `${i + 1}. ${STRATEGY_LABELS[s.strategy]}  ` +
-            `wait ${s.meanWait.toFixed(2)}±${s.stdWait.toFixed(2)}  ` +
+            `avgWait ${s.meanWait.toFixed(2)}±${s.stdWait.toFixed(2)}  ` +
+            `maxWait ${s.meanMaxWait.toFixed(2)}  ` +
             `empty ${s.meanEmpty.toFixed(1)}  ` +
             `ticks ${s.meanTicks.toFixed(1)}  ` +
             `win ${s.winRate.toFixed(0)}%  ` +
@@ -1267,29 +1311,49 @@ function renderBatchSummary(summary) {
     const tbody = document.querySelector('#batch-table tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
-    const ranked = [...summary].sort((a, b) => a.meanWait - b.meanWait);
+    const cfg = RANK_METRICS[batchRankMetric] || RANK_METRICS.avgWait;
+    const ranked = [...summary].sort((a, b) => a[cfg.meanKey] - b[cfg.meanKey]);
+
+    const theadCells = document.querySelectorAll('#batch-table thead th');
+    theadCells.forEach((th, idx) => {
+        th.classList.toggle('is-objective', idx === cfg.colIndex);
+    });
+
     ranked.forEach((s, i) => {
         const tr = document.createElement('tr');
         tr.classList.add(`rank-${i + 1}`);
         if (s.incomplete > 0) tr.classList.add('incomplete');
         const win = Math.max(0, Math.min(100, s.winRate));
-        tr.innerHTML = `
-            <td class="col-rank">${i + 1}</td>
-            <td><span class="strategy-name">${STRATEGY_LABELS[s.strategy]}</span></td>
-            <td class="num">${s.meanWait.toFixed(2)}</td>
-            <td class="num">${s.stdWait.toFixed(2)}</td>
-            <td class="num">${s.meanEmpty.toFixed(1)}</td>
-            <td class="num">${s.meanTicks.toFixed(1)}</td>
-            <td class="col-win">
+        const cells = [
+            `<td class="col-rank">${i + 1}</td>`,
+            `<td><span class="strategy-name">${STRATEGY_LABELS[s.strategy]}</span></td>`,
+            `<td class="num${batchRankMetric === 'avgWait' ? ' is-objective' : ''}">${s.meanWait.toFixed(2)}</td>`,
+            `<td class="num">${s.stdWait.toFixed(2)}</td>`,
+            `<td class="num${batchRankMetric === 'maxWait' ? ' is-objective' : ''}">${s.meanMaxWait.toFixed(1)}</td>`,
+            `<td class="num${batchRankMetric === 'emptyTravel' ? ' is-objective' : ''}">${s.meanEmpty.toFixed(1)}</td>`,
+            `<td class="num${batchRankMetric === 'ticks' ? ' is-objective' : ''}">${s.meanTicks.toFixed(1)}</td>`,
+            `<td class="col-win">
                 <div class="win-cell">
                     <div class="win-bar" aria-hidden="true"><span style="width:${win}%"></span></div>
                     <span class="win-pct">${s.winRate.toFixed(0)}%</span>
                 </div>
-            </td>
-            <td class="num">${s.incomplete}</td>
-        `;
+            </td>`,
+            `<td class="num">${s.incomplete}</td>`,
+        ];
+        tr.innerHTML = cells.join('');
         tbody.appendChild(tr);
     });
+}
+
+function applyBatchRankMetric(metric) {
+    if (!RANK_METRICS[metric]) return;
+    batchRankMetric = metric;
+    document.querySelectorAll('.rank-metric-btn').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.metric === metric);
+    });
+    if (!batchRows.length) return;
+    lastBatchSummary = summarizeBatch(batchRows, batchRankMetric);
+    renderBatchSummary(lastBatchSummary);
 }
 
 function setBatchBusy(busy) {
@@ -1375,7 +1439,7 @@ async function runBatchCompare() {
             if (i % 2 === 1 || i === n - 1) await yieldToUi();
         }
 
-        lastBatchSummary = summarizeBatch(batchRows);
+        lastBatchSummary = summarizeBatch(batchRows, batchRankMetric);
         renderBatchSummary(lastBatchSummary);
         setBatchProgress(n, n, `Done · ${n} seeds · ${batchRows.length} rows`);
         if (csvBtn) csvBtn.disabled = false;
@@ -1541,6 +1605,9 @@ document.getElementById('btn-batch-csv').addEventListener('click', () => {
     if (batchRows.length) downloadCsv(batchRows);
 });
 document.getElementById('btn-batch-copy').addEventListener('click', () => { copyBatchSummary(); });
+document.querySelectorAll('.rank-metric-btn').forEach(btn => {
+    btn.addEventListener('click', () => applyBatchRankMetric(btn.dataset.metric));
+});
 
 document.getElementById('strategy-select').addEventListener('change', () => {
     parkingStrategy = document.getElementById('strategy-select').value;
