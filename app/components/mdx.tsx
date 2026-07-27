@@ -1,29 +1,17 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { MDXRemote } from 'next-mdx-remote/rsc'
+import remarkGfm from 'remark-gfm'
 import { highlight } from 'sugar-high'
 import React from 'react'
 
-function Table({ data }) {
-  let headers = data.headers.map((header, index) => (
-    <th key={index}>{header}</th>
-  ))
-  let rows = data.rows.map((row, index) => (
-    <tr key={index}>
-      {row.map((cell, cellIndex) => (
-        <td key={cellIndex}>{cell}</td>
-      ))}
-    </tr>
-  ))
-
+function TableWrapper(props) {
   return (
     <div className="my-5 w-full overflow-x-auto rounded-lg border border-neutral-200 dark:border-neutral-800">
-      <table className="m-0 w-full border-collapse text-[0.9em]">
-        <thead>
-          <tr>{headers}</tr>
-        </thead>
-        <tbody>{rows}</tbody>
-      </table>
+      <table
+        {...props}
+        className="m-0 w-full border-collapse text-[0.9em]"
+      />
     </div>
   )
 }
@@ -208,7 +196,7 @@ let components = {
   VideoEmbed,
   a: CustomLink,
   code: Code,
-  Table,
+  table: TableWrapper,
 }
 
 export function CustomMDX(props) {
@@ -216,6 +204,11 @@ export function CustomMDX(props) {
     <MDXRemote
       {...props}
       components={{ ...components, ...(props.components || {}) }}
+      options={{
+        mdxOptions: {
+          remarkPlugins: [remarkGfm],
+        },
+      }}
     />
   )
 }
