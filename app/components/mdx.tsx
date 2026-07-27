@@ -73,14 +73,16 @@ function DemoEmbed({
   title?: string
   href?: string
 }) {
+  const embedSrc = src.includes('?') ? `${src}&embed=1` : `${src}?embed=1`
+
   return (
     <figure className="my-8 w-full">
-      <div className="w-full overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
+      <div className="w-full overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
         <iframe
-          src={src}
+          src={embedSrc}
           title={title}
-          className="w-full border-0"
-          style={{ height: 'min(70vh, 720px)', minHeight: '520px' }}
+          className="w-full border-0 bg-neutral-50 dark:bg-neutral-950"
+          style={{ height: 'min(72vh, 760px)', minHeight: '560px' }}
           loading="lazy"
         />
       </div>
@@ -91,7 +93,7 @@ function DemoEmbed({
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline underline-offset-2"
+            className="underline underline-offset-2 decoration-neutral-400 dark:decoration-neutral-600"
           >
             Open full screen
           </a>
