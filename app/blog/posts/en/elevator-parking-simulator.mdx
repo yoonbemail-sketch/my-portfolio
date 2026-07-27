@@ -31,9 +31,11 @@ Where should idle elevators wait in an **apartment**? This tick-based simulator 
 
 Parking helps when cars are often **idle**. In light or moderate traffic, Stay / Lobby / Mid / Spread / Demand can move wait time and empty travel.
 
+**IdleFrac** = elevator-ticks in IDLE or PARKING divided by (ticks × elevators). The live dashboard and Batch header show it with a regime chip: ≥25% `parking-sensitive`, &lt;10% `saturated`, else `mixed`. Ranking still uses avg wait (or Rank-by); IdleFrac is diagnostic.
+
 In a **saturated** building, cars rarely park — they stay in service — so parking policy has little leverage. The better lever is **service zoning** (odd/even floors, low/high banks): fewer stops per trip, less door time, shorter round trips.
 
-This demo isolates parking on a fixed passenger stream. Push arrival rate up in Compare all; shrinking gaps between strategies is a clue that zoning, not parking, is the next experiment when the bank is always busy.
+This demo isolates parking on a fixed passenger stream. Push arrival rate up in Compare all; shrinking gaps and falling IdleFrac are clues that zoning, not parking, is the next experiment when the bank is always busy.
 
 ## Strategy catalog
 
@@ -99,6 +101,7 @@ Office any-floor OD is deferred.
 
 - **Avg / Max wait (ticks)** — hall call to board
 - **Empty travel (floors)** — floors moved empty (parking cost)
+- **IdleFrac** — share of car-ticks spent IDLE or PARKING; regime chip (parking-sensitive / mixed / saturated)
 - **Ticks / Completed** — makespan and throughput
 
 ## Tech stack

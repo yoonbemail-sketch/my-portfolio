@@ -531,7 +531,7 @@ body {
 
 .metrics {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 0.75rem;
 }
 
@@ -543,6 +543,42 @@ body {
     display: flex;
     flex-direction: column;
     gap: 0.15rem;
+}
+
+.metric-idle {
+    gap: 0.25rem;
+}
+
+.regime-chip {
+    align-self: flex-start;
+    margin-top: 0.15rem;
+    font-size: 0.65rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 0.25rem;
+    padding: 0.1rem 0.35rem;
+    background: var(--soft);
+}
+
+.regime-chip[data-regime="parking-sensitive"] {
+    color: var(--fg);
+    border-color: var(--fill);
+}
+
+.regime-chip[data-regime="saturated"] {
+    color: var(--fg);
+    border-color: var(--full, #c45c26);
+}
+
+.regime-line {
+    margin: 0.35rem 0 0;
+    font-size: 0.75rem;
+    font-family: var(--mono);
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
 }
 
 .metric-label {
@@ -592,6 +628,34 @@ body {
     border-radius: 0.5rem;
     background: var(--panel);
     height: fit-content;
+}
+
+.panel-section {
+    margin: 0;
+    padding: 0;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    min-width: 0;
+}
+
+.panel-section + .panel-section {
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
+.panel-section legend {
+    padding: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.panel-hint {
+    margin: -0.35rem 0 0;
 }
 
 .field {

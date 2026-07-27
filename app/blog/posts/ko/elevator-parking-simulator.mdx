@@ -31,9 +31,11 @@ summary: '아파트 엘리베이터 파킹 시뮬 — 승객 시나리오를 고
 
 유휴 구간이 길수록 파킹이 중요하다. 한산·중간 부하에서는 Stay / Lobby / Mid / Spread / Demand가 대기·공차 이동을 가릅니다.
 
+**IdleFrac** = IDLE·PARKING car-ticks / (ticks × elevators). 라이브·Batch에 포화도 칩으로 표시합니다: ≥25% `parking-sensitive`, &lt;10% `saturated`, 그 외 `mixed`. 랭킹은 avg wait(또는 Rank by)이고 IdleFrac는 진단용입니다.
+
 **항상 붐비는** 건물에서는 차가 거의 서지 않아 파킹 효과가 작아집니다. 그때는 **서비스 존 분할**(홀수/짝수층, 저층/고층 뱅크)로 정차 수와 왕복 시간을 줄이는 편이 맞습니다.
 
-이 데모는 고정 시나리오에서 **파킹만** 비교합니다. Arrival rate를 올려 Compare all 하면 전략 간 차이가 줄어드는 경우가 많은데, 그건 “풀가동일 때는 파킹이 아니라 존”이라는 힌트입니다.
+이 데모는 고정 시나리오에서 **파킹만** 비교합니다. Arrival rate를 올려 Compare all 하면 전략 간 차이가 줄고 IdleFrac가 떨어지는 경우가 많은데, 그건 “풀가동일 때는 파킹이 아니라 존”이라는 힌트입니다.
 
 ## 전략 카탈로그
 
@@ -99,6 +101,7 @@ summary: '아파트 엘리베이터 파킹 시뮬 — 승객 시나리오를 고
 
 - **Avg / Max wait (ticks)**
 - **Empty travel (floors)**
+- **IdleFrac** — IDLE|PARKING 비율 + 레짐 칩 (parking-sensitive / mixed / saturated)
 - **Ticks / Completed**
 
 ## Tech stack

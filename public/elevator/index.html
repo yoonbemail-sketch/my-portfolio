@@ -59,6 +59,11 @@
                 <span class="metric-label">Empty travel (floors)</span>
                 <span class="metric-value" id="stat-empty">0</span>
             </div>
+            <div class="metric metric-idle">
+                <span class="metric-label">IdleFrac</span>
+                <span class="metric-value" id="stat-idle-frac">0%</span>
+                <span class="regime-chip" id="stat-regime" data-regime="mixed">mixed</span>
+            </div>
             <div class="metric">
                 <span class="metric-label">Ticks</span>
                 <span class="metric-value" id="stat-ticks">0</span>
@@ -67,67 +72,79 @@
 
         <div class="layout">
             <aside class="controls" id="sim-controls">
-                <div class="field">
-                    <label for="strategy-select">Parking strategy</label>
-                    <select id="strategy-select">
-                        <option value="stay">Stay — last floor</option>
-                        <option value="lobby">Lobby — return to 1</option>
-                        <option value="mid">Mid — building center</option>
-                        <option value="spread">Spread — even homes</option>
-                        <option value="demand">Demand — hot floors</option>
-                    </select>
-                </div>
-                <div class="field scenario-field">
-                    <label for="seed-input">Scenario seed</label>
-                    <div class="seed-row">
-                        <input type="number" id="seed-input" min="1" max="999999" value="42">
-                        <button class="btn" id="btn-new-scenario" type="button">New</button>
+                <fieldset class="panel-section">
+                    <legend>Policy</legend>
+                    <p class="hint panel-hint">Where idle cars wait (future: zoning).</p>
+                    <div class="field">
+                        <label for="strategy-select">Parking strategy</label>
+                        <select id="strategy-select">
+                            <option value="stay">Stay — last floor</option>
+                            <option value="lobby">Lobby — return to 1</option>
+                            <option value="mid">Mid — building center</option>
+                            <option value="spread">Spread — even homes</option>
+                            <option value="demand">Demand — hot floors</option>
+                        </select>
                     </div>
-                    <p class="hint" id="scenario-label">Scenario seed 42</p>
-                </div>
-                <div class="field">
-                    <label for="peak-select">Traffic period</label>
-                    <select id="peak-select">
-                        <option value="morning">Morning egress (upper → lobby)</option>
-                        <option value="evening" selected>Evening ingress (lobby → upper)</option>
-                        <option value="midday">Midday / off-peak</option>
-                    </select>
-                    <p class="hint">Where trips start: morning ~90% from upper floors, evening ~90% from lobby, midday mixed.</p>
-                </div>
-                <div class="field">
-                    <label for="interfloor-range">Interfloor trips <span id="interfloor-val">10%</span></label>
-                    <input type="range" id="interfloor-range" min="0" max="40" value="10">
-                    <p class="hint">If starting upstairs, chance of going to another upper floor instead of the lobby.</p>
-                </div>
-                <div class="field">
-                    <label for="dwell-range">Door dwell (ticks) <span id="dwell-val">2</span></label>
-                    <input type="range" id="dwell-range" min="1" max="6" value="2">
-                </div>
-                <div class="field">
-                    <label for="floors-range">Floors <span id="floors-val">20</span></label>
-                    <input type="range" id="floors-range" min="8" max="40" value="20">
-                </div>
-                <div class="field">
-                    <label for="elevators-range">Elevators <span id="elevators-val">4</span></label>
-                    <input type="range" id="elevators-range" min="1" max="8" value="4">
-                </div>
-                <div class="field">
-                    <label for="capacity-range">Capacity <span id="capacity-val">8</span></label>
-                    <input type="range" id="capacity-range" min="4" max="16" value="8">
-                </div>
-                <div class="field">
-                    <label for="arrival-range">Arrival rate <span id="arrival-val">15%</span></label>
-                    <input type="range" id="arrival-range" min="5" max="40" value="15">
-                    <p class="hint">Per-tick chance a passenger appears (Bernoulli; ≤1 per tick). 15% ≈ one every ~7 ticks.</p>
-                </div>
-                <div class="field">
-                    <label for="target-range">Target passengers <span id="target-val">80</span></label>
-                    <input type="range" id="target-range" min="20" max="200" value="80" step="10">
-                </div>
-                <div class="field">
-                    <label for="sim-speed">Speed <span id="sim-speed-val">10 TPS</span></label>
-                    <input type="range" id="sim-speed" min="1" max="40" value="10">
-                </div>
+                </fieldset>
+
+                <fieldset class="panel-section">
+                    <legend>Environment</legend>
+                    <div class="field scenario-field">
+                        <label for="seed-input">Scenario seed</label>
+                        <div class="seed-row">
+                            <input type="number" id="seed-input" min="1" max="999999" value="42">
+                            <button class="btn" id="btn-new-scenario" type="button">New</button>
+                        </div>
+                        <p class="hint" id="scenario-label">Scenario seed 42</p>
+                    </div>
+                    <div class="field">
+                        <label for="peak-select">Traffic period</label>
+                        <select id="peak-select">
+                            <option value="morning">Morning egress (upper → lobby)</option>
+                            <option value="evening" selected>Evening ingress (lobby → upper)</option>
+                            <option value="midday">Midday / off-peak</option>
+                        </select>
+                        <p class="hint">Where trips start: morning ~90% from upper floors, evening ~90% from lobby, midday mixed.</p>
+                    </div>
+                    <div class="field">
+                        <label for="interfloor-range">Interfloor trips <span id="interfloor-val">10%</span></label>
+                        <input type="range" id="interfloor-range" min="0" max="40" value="10">
+                        <p class="hint">If starting upstairs, chance of going to another upper floor instead of the lobby.</p>
+                    </div>
+                    <div class="field">
+                        <label for="dwell-range">Door dwell (ticks) <span id="dwell-val">2</span></label>
+                        <input type="range" id="dwell-range" min="1" max="6" value="2">
+                    </div>
+                    <div class="field">
+                        <label for="floors-range">Floors <span id="floors-val">20</span></label>
+                        <input type="range" id="floors-range" min="8" max="40" value="20">
+                    </div>
+                    <div class="field">
+                        <label for="elevators-range">Elevators <span id="elevators-val">4</span></label>
+                        <input type="range" id="elevators-range" min="1" max="8" value="4">
+                    </div>
+                    <div class="field">
+                        <label for="capacity-range">Capacity <span id="capacity-val">8</span></label>
+                        <input type="range" id="capacity-range" min="4" max="16" value="8">
+                    </div>
+                    <div class="field">
+                        <label for="arrival-range">Arrival rate <span id="arrival-val">15%</span></label>
+                        <input type="range" id="arrival-range" min="5" max="40" value="15">
+                        <p class="hint">Per-tick chance a passenger appears (Bernoulli; ≤1 per tick). 15% ≈ one every ~7 ticks.</p>
+                    </div>
+                    <div class="field">
+                        <label for="target-range">Target passengers <span id="target-val">80</span></label>
+                        <input type="range" id="target-range" min="20" max="200" value="80" step="10">
+                    </div>
+                </fieldset>
+
+                <fieldset class="panel-section">
+                    <legend>Playback</legend>
+                    <div class="field">
+                        <label for="sim-speed">Speed <span id="sim-speed-val">10 TPS</span></label>
+                        <input type="range" id="sim-speed" min="1" max="40" value="10">
+                    </div>
+                </fieldset>
             </aside>
 
             <main class="stage">
@@ -149,6 +166,7 @@
                         <div>
                             <h2>Same scenario · strategy comparison</h2>
                             <p class="hint" id="compare-settings">Passenger arrivals are fixed. Only parking policy changes.</p>
+                            <p class="regime-line" id="compare-regime" hidden></p>
                         </div>
                         <button class="btn" id="btn-compare-close" type="button" aria-label="Close comparison">Close</button>
                     </div>
@@ -160,6 +178,7 @@
                                     <th>Avg wait</th>
                                     <th>Max wait</th>
                                     <th>Empty</th>
+                                    <th>Idle%</th>
                                     <th>Ticks</th>
                                     <th>Done</th>
                                 </tr>
@@ -206,6 +225,7 @@
                                     <th class="num">±</th>
                                     <th class="num">Max wait</th>
                                     <th class="num">Empty</th>
+                                    <th class="num">Idle%</th>
                                     <th class="num">Ticks</th>
                                     <th class="col-win">Win rate</th>
                                     <th class="num">Miss</th>
