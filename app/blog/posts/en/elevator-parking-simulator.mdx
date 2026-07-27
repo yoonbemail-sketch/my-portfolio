@@ -1,0 +1,47 @@
+---
+title: 'Elevator Parking Simulator'
+publishedAt: '2026-07-27'
+summary: 'Tick-based simulator comparing where idle elevators should wait — parking strategies under peak traffic, with wait time and empty-travel metrics.'
+---
+
+Where should idle elevators wait? This tick-based simulator compares parking (standby placement) strategies under different peak traffic patterns, measuring passenger wait and empty-car travel.
+
+[GitHub](https://github.com/yoonbemail-sketch/elevator) · [Full demo](/elevator/)
+
+## Demo
+
+<DemoEmbed
+  src="/elevator/"
+  href="/elevator/"
+  title="Elevator Parking Simulator — try strategies live"
+/>
+
+## Question
+
+Elevator “배치” here means **where to send a free car while it waits**, not shaft construction. Under up-peak (lobby → upper floors), lobby parking often cuts wait; under down-peak the same policy wastes empty travel and leaves upper halls uncovered.
+
+## What you can compare
+
+| Control | Role |
+| --- | --- |
+| Parking strategy | Stay / Lobby / Mid / Spread / Demand |
+| Peak mode | Mixed / Up-peak / Down-peak / Lunch |
+| Building knobs | Floors, car count, capacity, arrival rate |
+
+## Metrics
+
+- **Avg / Max wait** — hall call to board
+- **Completed** — trips finished vs target
+- **Empty travel** — floors moved with no passengers (parking cost)
+
+## How it runs
+
+Each tick: spawn OD passengers by peak mode → assign nearest capable car → move / door dwell / board-alight → if idle, apply the selected parking policy. UI follows the boarding-sim pattern (strategy dropdown, sliders, Start/Pause/Reset, live dashboard).
+
+## Tech stack
+
+Vanilla HTML · CSS · JavaScript (tick loop + DOM grid) · hosted under this site at `/elevator/`
+
+## Next
+
+Richer OD matrices, passenger traits, zoning dispatch, and energy metrics — same control surface, deeper model.

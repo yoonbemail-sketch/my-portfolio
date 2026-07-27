@@ -9,6 +9,7 @@ Operations Analyst · Mathematical Optimization (OR) · PL-300 · LSSGB
 ## Projects
 
 - **Kream Sneakers Resale Market Analysis** — Power BI embed + star schema / DAX notes
+- **Elevator Parking Simulator** — idle-car parking strategies under peak traffic (`/elevator/`)
 - **semantic-resume-aligner** — form-filling automation with human-supervised gates
 - **Love the progress** — database schema and backend domain logic
 

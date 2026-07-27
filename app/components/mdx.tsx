@@ -64,6 +64,43 @@ function PowerBIEmbed({
   )
 }
 
+function DemoEmbed({
+  src,
+  title = 'Interactive demo',
+  href,
+}: {
+  src: string
+  title?: string
+  href?: string
+}) {
+  return (
+    <figure className="my-8 w-full">
+      <div className="w-full overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
+        <iframe
+          src={src}
+          title={title}
+          className="w-full border-0"
+          style={{ height: 'min(70vh, 720px)', minHeight: '520px' }}
+          loading="lazy"
+        />
+      </div>
+      <figcaption className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400">
+        <span>{title}</span>
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2"
+          >
+            Open full screen
+          </a>
+        ) : null}
+      </figcaption>
+    </figure>
+  )
+}
+
 function toEmbedSrc(src: string): string | null {
   if (!src || src.includes('REPLACE_WITH')) return null
 
@@ -193,6 +230,7 @@ let components = {
   h6: createHeading(6),
   Image: RoundedImage,
   PowerBIEmbed,
+  DemoEmbed,
   VideoEmbed,
   a: CustomLink,
   code: Code,
