@@ -21,7 +21,7 @@
         <header class="top">
             <div class="brand">
                 <h1>Elevator Parking</h1>
-                <p class="lede">Compare where idle cars should wait under peak traffic.</p>
+                <p class="lede">Apartment building — where should idle cars wait?</p>
             </div>
             <div class="actions">
                 <button class="btn primary" id="btn-play" type="button">Start</button>
@@ -66,13 +66,20 @@
                     </select>
                 </div>
                 <div class="field">
-                    <label for="peak-select">Peak mode</label>
+                    <label for="peak-select">Traffic period</label>
                     <select id="peak-select">
-                        <option value="mixed">Mixed</option>
-                        <option value="up">Up-peak</option>
-                        <option value="down">Down-peak</option>
-                        <option value="lunch">Lunch</option>
+                        <option value="morning">Morning egress (upper → lobby)</option>
+                        <option value="evening" selected>Evening ingress (lobby → upper)</option>
+                        <option value="midday">Midday / off-peak</option>
                     </select>
+                </div>
+                <div class="field">
+                    <label for="interfloor-range">Interfloor trips <span id="interfloor-val">10%</span></label>
+                    <input type="range" id="interfloor-range" min="0" max="40" value="10">
+                </div>
+                <div class="field">
+                    <label for="dwell-range">Door dwell (ticks) <span id="dwell-val">2</span></label>
+                    <input type="range" id="dwell-range" min="1" max="6" value="2">
                 </div>
                 <div class="field">
                     <label for="floors-range">Floors <span id="floors-val">20</span></label>
