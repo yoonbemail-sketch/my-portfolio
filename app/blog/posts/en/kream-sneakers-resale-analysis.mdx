@@ -1,118 +1,100 @@
 ---
 title: 'Kream Sneakers Resale Market Analysis'
 publishedAt: '2026-07-01'
-summary: 'A stateful trade-history collector → sales fact → Power BI star schema for premium, seasonality, and Bollinger signals.'
+summary: 'Trade-history collection → sales fact → Power BI for premium, seasonality, and signals.'
 ---
 
-An Operations Analyst project on Kream sneakers resale: a CDP-based trade collector that resumes, updates, and validates per size, then feeds a star schema and Power BI dashboards for premiums, seasonality, and buy/sell signals.
+An Operations Analyst project on Kream sneakers resale: collect trade history by size, clean it into a sales fact, and analyze premiums and signals in Power BI.
 
-Source code and the Power BI workspace stay private. This page documents the collector design, data rules, model, and report pages.
+Source code and the Power BI workspace stay private.
 
 ## Problem
 
-Resale decisions need model×size trade frequency, price level, and premium versus retail. A few recent rows on a product page are not enough for seasonality, size premiums, or delivery-type gaps — and long infinite-scroll histories cannot be scraped once and forgotten. Collection has to survive rate limits, session expiry, and partial runs.
+Resale decisions need how often a model×size trades, at what price, and at what premium to retail. A few recent rows on a product page are not enough for seasonality or size gaps. Histories are long and easy to interrupt, so a one-shot scrape is not enough.
 
-## Collection engine
+## How collection works
 
-The core is a **stateful collector**, not a one-shot crawl. Playwright attaches to an already-logged-in Chrome via CDP (`localhost:9222`), then walks each product through:
+Playwright attaches to an already-logged-in Chrome and runs each product like this:
 
 ```text
-Queue / product page
-        │
-        ▼
-Identify model · cache or analyze sizes (expected volume)
-        │
-        ▼
-Collect missing sizes only (95% = complete)
-        │
-        ▼
-Per-size scroll loop → CSV (Size, Price, Date, DeliveryType)
-        │
-        ▼
-Merge (+ SKU) → sales fact → Power BI
+Product page / queue
+    → Identify model and expected volume per size
+    → Collect only sizes that are still incomplete
+    → Save size, price, date, delivery type to CSV
+    → Merge by model → sales fact → Power BI
 ```
 
-Entry points: interactive single-product run, batch queue processor, and a queue adder that pulls model / URL / name from the open tab.
+- **Single run:** the product open in the browser
+- **Batch run:** walk a queue of products unattended
+- **Queue adder:** pull model / URL from the current tab into the list
 
-### Per-size collection modes
+### Resume, update, fill gaps
 
-| Mode | When | Behavior |
-| --- | --- | --- |
-| Full | No final CSV | Newest-first scroll into a temp `_W` file; rename on success |
-| Update | Final CSV exists | Collect only new trades; stop on ≥80% batch overlap; prepend uniques |
-| Resume | Interrupted run | Keep `_W` / `_W_reverse` if large enough; else start fresh |
-| Bottom gap fill | Top is current, oldest missing | Oldest-first scroll to close the hole |
-| Reverse-append | Resume from `_W` | Oldest-first until overlap with prior oldest date |
+If there is no file yet, collect from newest trades downward.  
+If a file already exists, collect **only newer trades** and stop when they overlap the old data.  
+If a run was interrupted, **resume** from a temp file. If the newest side is filled but the oldest side is missing, fill that gap only.
 
-Completion is not a raw row count. The engine treats a size as done when it hits the target, reaches ~90% of expected volume, or ends on a natural batch boundary (not a multiple of 50) near that threshold — so soft-bans are not mistaken for “finished.”
+“Done” is not just a raw row count. A size counts as complete when it is close to the expected volume on the page (~90%), so a temporary stall is not treated as finished.
 
-### Resilience built into the loop
+### When something blocks the run
 
-| Signal | Response |
-| --- | --- |
-| Soft-ban (no new rows) | Progress-based no-change thresholds → exponential backoff → reload → retry remaining sizes |
-| Session expiry | Detect login URL/modal → re-login → retry current size |
-| Scroll stuck (too fast) | Scroll-up unstick (capped retries) → error if still stuck |
-| Wrong-size rows | JS size-prefix check → `CORRUPTED` abort |
-| Bad dates | Filter invalid date fields before write |
-| Size analysis quality | Reject identical volumes, duplicate keys, mostly-zero volumes |
-| Very high volume | Skip sizes above a safe volume cap |
+- If scrolling stops producing new rows, wait, reload, then retry the remaining sizes.
+- If the session expires, log in again and continue.
+- If the scroll looks stuck, nudge it; if it still fails, skip that size.
+- If the wrong size or a bad date shows up, drop those rows (and stop that size if needed).
+- If size volumes look wrong (all identical, mostly empty), re-run size analysis.
+- Very high-volume sizes are skipped for safety.
 
-Batch mode runs the same pipeline unattended: read `scrape_queue.csv`, collect missing sizes, merge on success, remove from queue, notify on soft-ban / skip / batch summary.
+Batch mode: read the queue → fill missing sizes → merge and remove from the queue on success → notify on stalls or skips.
 
-## Data quality rules
+## Keeping the data clean
 
-| Rule | Why |
-| --- | --- |
-| Size prefix validation | Keep scroll batches from mixing sizes |
-| Completion ratio (≥ 90% / 95%) | Soft-complete vs “already collected” for missing-only |
-| Relative date → absolute | Normalize “3 hours ago” using file mtime at fact export |
-| Dedup on merge / update | Drop duplicates; append only new trades |
-| Master product cache | Brand, release date, retail, size distribution in `sneakers_info` |
-| Dual size keys | Disambiguate same KR mm with different US labels (e.g. `250_W8`) |
+- Check that each row matches the size being collected.
+- Compare collected rows to expected volume to decide completeness.
+- Turn relative dates like “3 hours ago” into real dates at fact export.
+- On re-runs, drop duplicates and keep only new trades.
+- Cache brand, release date, retail price, and size mix in a master file.
+- Split size keys when the same mm has different US labels (e.g. men’s vs women’s).
 
 ## From CSV to fact
 
-Grain is always **one trade**.
+One row = one trade.
 
-- Per size: `CSV/{MODEL}/{MODEL}_{size}.csv`
-- Per model: `{MODEL}_merged.csv` (+ `SKU`)
-- Cross-model: `sales_fact.csv` (`SKU`, `Size`, `Price`, `Date`, `DeliveryType`) — incremental append by default, full rebuild optional
+1. CSV per size
+2. One merged file per model (+ SKU)
+3. Cross-model `sales_fact` (SKU, Size, Price, Date, DeliveryType)
 
 ## Data modeling (star schema)
 
-In Power BI:
+In Power BI, a trade fact joins product, brand, and date dimensions.
 
-- **Fact** — `fact_sales` at trade grain (`SKU`, `Size`, `Size Type`, `Price`, `DeliveryType`, `DateKey`)
-- **Dimensions** — `dim_product` (Model_No, Name_En/Kr, Brand, Category, Color, IsCollab, Release_Date, Retail_Price), `dim_brand`, `dim_date`
-- **Relationships** — `dim_date[DateKey] → fact_sales`, `dim_product → fact_sales`, `dim_brand → dim_product` (plus inactive brand→fact)
-- **What-if / disconnected** — `Analysis Period`, `Profit Target %`, `Sales or Qty`, `Signal_Toggles`
+- **Fact** — `fact_sales` (SKU, Size, Price, DeliveryType, DateKey …)
+- **Dimensions** — `dim_product`, `dim_brand`, `dim_date`
+- **What-if** — analysis period, profit target, Sales/Qty toggle, signal toggles
 
 ```text
 dim_brand ──► dim_product ──► fact_sales
 dim_date    ─────────────────► fact_sales
-
-disconnected: Analysis Period · Profit Target % · Sales or Qty · Signal_Toggles
 ```
 
-Key measures: `%Average Premium`, `Daily Avg Price`, Bollinger / RSI / Trend buy·sell conditions, `KREAM Price Forecast`.
+Key measures: `%Average Premium`, `Daily Avg Price`, Bollinger / RSI / Trend signals, `KREAM Price Forecast`.
 
 ## Dashboard
 
-Instead of a public Publish-to-web embed (free-license limit), the report pages are:
+Instead of a public embed (free-license limit), the report pages are:
 
-1. **Overview** — Total Sales / Quantity / %Average Premium KPIs, sales by date, sales by brand (Jordan · Nike · Adidas lead), category and `IsCollab` slicers
-2. **Price trend** — Brand · Product · Size filters with Daily Avg Price by Date
-3. **Signals** — Quantity vs Avg Price, Bollinger Band Analysis, what-if period / profit target, Master Buy·Sell markers
-4. **Premium by brand** — %Average Premium by brand, Retail vs Resale bubble, weekday/weekend premium matrix
-5. **Size heatmap** — Size × Brand premium heatmap (MM / US / W-MM), premium over time by DeliveryType
+1. **Overview** — sales, quantity, average premium; sales by date and brand
+2. **Price trend** — daily average price by brand / product / size
+3. **Signals** — quantity vs price, Bollinger bands, period / profit-target what-if
+4. **Premium by brand** — brand premium, retail vs resale, weekday vs weekend
+5. **Size heatmap** — size × brand premium, trend by delivery type
 
-Sample-wide observations:
+Sample observations:
 
 - About **3M** trades, ~**912bn** KRW sales, ~**59%** average premium
 - Sales concentration: Jordan → Nike → Adidas
 - Jordan is a clear premium outlier versus retail
-- Premium splits further by size, delivery type, and collaboration flag
+- Premium also splits by size, delivery type, and collaboration
 
 ## DAX / modeling notes
 
@@ -124,19 +106,18 @@ DIVIDE (
 )
 ```
 
-- Prefer relationships for dimension attributes; keep dynamic logic in measures
-- Bollinger / RSI / Trend signals combine fact measures with what-if window and profit target
-- `Sales or Qty` switches the value axis on shared visuals
+- Attributes come through relationships; calculations live in measures.
+- Signals combine fact measures with what-if period and profit target.
 
 ## Stack
 
 | Layer | Tools |
 | --- | --- |
-| Collection | Python, Playwright (CDP), batch queue |
-| Collector ops | Resume · update · gap fill · soft-ban backoff · re-login |
-| Storage / ETL | CSV per SKU·size, merge · validate · `sales_fact` export |
+| Collection | Python, Playwright (attach to Chrome) |
+| Ops | Resume, incremental update, wait/retry on stalls, re-login |
+| ETL | Per-size CSV → merge → `sales_fact` |
 | Analytics | Power BI (star schema, DAX, what-if) |
 
 ## Results
 
-Built a stateful model×size trade collector that can resume and incrementally update, exported a clean sales fact, and loaded it into a `fact_sales` star schema with report pages for premium, price trends, and Bollinger-style signals. Public embedding is omitted due to license limits; this write-up documents the collector, model, pages, and insights.
+Built a trade collector that can resume and update by size, exported a sales fact, and connected it to Power BI pages for premium, price, and signals. Public embedding is omitted due to license limits; this page summarizes the collection approach and the dashboard.
