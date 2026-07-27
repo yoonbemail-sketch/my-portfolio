@@ -173,6 +173,15 @@
                         <div class="batch-title-block">
                             <p class="batch-kicker">Monte Carlo</p>
                             <h2>Strategy ranking</h2>
+                            <div class="rank-metric" role="group" aria-label="Rank by objective">
+                                <span class="rank-metric-label">Rank by</span>
+                                <div class="rank-metric-toggle">
+                                    <button type="button" class="rank-metric-btn is-active" data-metric="avgWait">Avg wait</button>
+                                    <button type="button" class="rank-metric-btn" data-metric="maxWait">Max wait</button>
+                                    <button type="button" class="rank-metric-btn" data-metric="emptyTravel">Empty</button>
+                                    <button type="button" class="rank-metric-btn" data-metric="ticks">Ticks</button>
+                                </div>
+                            </div>
                             <div class="batch-meta" id="batch-settings" aria-live="polite">—</div>
                         </div>
                         <div class="batch-actions">
@@ -193,8 +202,9 @@
                                 <tr>
                                     <th class="col-rank">#</th>
                                     <th>Strategy</th>
-                                    <th class="num">Wait</th>
+                                    <th class="num">Avg wait</th>
                                     <th class="num">±</th>
+                                    <th class="num">Max wait</th>
                                     <th class="num">Empty</th>
                                     <th class="num">Ticks</th>
                                     <th class="col-win">Win rate</th>
