@@ -73,7 +73,18 @@ function DemoEmbed({
   title?: string
   href?: string
 }) {
-  const embedSrc = src.includes('?') ? `${src}&embed=1` : `${src}?embed=1`
+  // Prefer /path/index.html so relative assets resolve under /path/ on Vercel.
+  const normalized = src.includes('.html')
+    ? src
+    : `${src.replace(/\/?$/, '/')}index.html`
+  const embedSrc = normalized.includes('?')
+    ? `${normalized}&embed=1`
+    : `${normalized}?embed=1`
+  const fullHref = href
+    ? href.includes('.html')
+      ? href
+      : `${href.replace(/\/?$/, '/')}index.html`
+    : undefined
 
   return (
     <figure className="my-8 w-full">
@@ -88,9 +99,9 @@ function DemoEmbed({
       </div>
       <figcaption className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400">
         <span>{title}</span>
-        {href ? (
+        {fullHref ? (
           <a
-            href={href}
+            href={fullHref}
             target="_blank"
             rel="noopener noreferrer"
             className="underline underline-offset-2 decoration-neutral-400 dark:decoration-neutral-600"

@@ -4,7 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Elevator Parking Simulator</title>
-    <link rel="stylesheet" href="style.css">
+    <script>
+      // Vercel serves /elevator without a trailing slash, so relative assets
+      // resolve to /script.js. document.write(<base>) must run during parse.
+      (function () {
+        var path = location.pathname.replace(/\/index\.html$/i, '');
+        if (/\/elevator\/?$/.test(path)) {
+          document.write('<base href="' + location.origin + '/elevator/">');
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="/elevator/style.css">
 </head>
 <body>
     <div class="app">
@@ -104,6 +114,6 @@
             </main>
         </div>
     </div>
-    <script src="script.js"></script>
+    <script src="/elevator/script.js"></script>
 </body>
 </html>
