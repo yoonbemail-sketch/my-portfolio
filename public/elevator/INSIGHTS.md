@@ -1,126 +1,91 @@
-# Operational insights — update tree
+# Elevator parking — insight wrap-up
 
-Living notes from running the apartment elevator parking demo.
-Each node is a **lever or diagnostic** we learned, with one concrete example.
+Portfolio demo of **where idle cars wait** in an apartment bank, on a **fixed seeded passenger stream**.
+Goal: separate levers, measure with Batch, stop before over-tuning dispatch.
 
-**Method.** Before changing a Policy lever (parking, hall dispatch, future zoning), run **Batch N=100** on the current settings, save CSV/summary under `benchmarks/`, then change one thing and re-batch with the same seeds. Compare mean wait / max / empty / IdleFrac — not vibes.
+## Takeaways (read this first)
+
+1. **No universal best parking policy.** Evening ingress → Lobby/Demand win mean wait; Stay is cheap on empty travel but slow. Morning egress often prefers shaft coverage (Spread/Demand). Rankings flip with traffic — like boarding methods.
+2. **Parking needs idle time.** Use **IdleFrac** (IDLE|PARKING car-ticks ÷ ticks×cars). High → parking-sensitive; very low → saturated → next lever is **zoning**, not smarter parking.
+3. **Parking ≠ hall dispatch.** Sticky nearest-car can leave IDLE cars unused while a loaded car holds a far call (seed 42, `#76@16` on E1 while E3/E4 IDLE@20). Full **reassign** fixes orphans but is myopic — Mid mean wait got *worse* on Batch N=100 (idle cars steal work from productive up-trips).
+4. **Change one Policy knob; Batch N=100 before/after.** Artifacts under [`benchmarks/`](benchmarks/). Don’t optimize on a single replay.
 
 ```text
-Traffic / building (Environment)
+Environment (OD, arrival, building)
         │
         ▼
-   IdleFrac regime ─────────────────────────────┐
-   parking-sensitive / mixed / saturated          │
-        │                                         │
-        ├─ high idle ──► Parking policy (Policy)  │
-        │                 Stay·Lobby·Mid·Spread·Demand
-        │                                         │
-        └─ saturated ──► Zoning (future Policy)   │
-                          odd/even · low/high     │
-                                                  │
-Hall-call dispatch (Policy, orthogonal) ◄─────────┘
-   sticky nearest-car ──► reassign each tick
+   IdleFrac → parking-sensitive | mixed | saturated
+        │                         │
+        ▼                         ▼
+   Parking policy            Zoning (not built)
+   Stay·Lobby·Mid·Spread·Demand
         │
-        ▼
-   Batch N / Rank-by  (measure which baseline wins *this* regime)
+        └─ orthogonal → Hall dispatch (sticky | reassign)
+                              │
+                              ▼
+                         Batch N / Rank-by
 ```
 
-CLI: `node tools/run-batch.mjs --dispatch sticky|reassign --n 100 --seed 42 --out benchmarks/…`
+Live demo: portfolio `/elevator/`. Reproduce A/B: `npm run batch:sticky` · `npm run batch:reassign`.
 
 ---
 
 ## 1. Parking vs zoning
 
-**Claim.** Parking only has room to act when cars spend time idle. Under saturation, cars rarely park — the useful lever shifts to **service zoning**.
+Parking only acts when cars idle. Raise arrival on the same seed → Compare-all gaps shrink and IdleFrac falls → “when always busy, zone not park.”
 
-**Example.** Same seed, evening ingress: raise **Arrival rate** and run **Compare all**. Strategy gaps in avg wait often shrink while IdleFrac falls — “when the bank is always busy, zone not park.”
+Demo still isolates **parking** only. Zoning stays a documented next lever, not coded.
 
-**Shipped.** Insight in README / plan / blog; demo still isolates parking only.
+## 2. IdleFrac
 
-**Next.** Odd/even or low/high banks under Policy.
+`IdleFrac = (IDLE|PARKING car-ticks) / (ticks × elevators)` — diagnostic, not Rank-by objective.
 
----
+| IdleFrac | Regime |
+| --- | --- |
+| ≥ 25% | parking-sensitive |
+| 10–25% | mixed |
+| &lt; 10% | saturated |
 
-## 2. IdleFrac (saturation diagnostic)
+Example: Stay / evening / seed 42 mid-run → ~62% idle with cars parked high — parking-sensitive.
 
-**Claim.**  
-`IdleFrac = (IDLE|PARKING car-ticks) / (ticks × elevators)`.  
-Not a ranking objective — a regime chip:
+## 3. Sticky vs reassign
 
-| IdleFrac | Regime | Hint |
-| --- | --- | --- |
-| ≥ 25% | `parking-sensitive` | Parking baselines can separate |
-| 10–25% | `mixed` | Both levers may matter |
-| &lt; 10% | `saturated` | Prefer zoning experiments |
+**Sticky:** assign once at arrival. **Reassign:** clear waiting hall assignments each tick and rescore.
 
-**Example.** Default evening Stay, seed 42, mid-run Copy debug: `idleFrac: 62% (parking)` with two cars IDLE at 20 while others still serve — classic parking-sensitive bank.
-
-**Shipped.** Live metric + Compare/Batch Idle % + CSV `idleFrac`; Rank-by stays avg/max wait, empty, ticks.
-
----
-
-## 3. Sticky vs reassign hall-call dispatch
-
-**Claim.** Hall calls use nearest-car cost **when the passenger appears**. Under **sticky**, that assignment never moves — a later closer IDLE does not steal the call. SCAN delays opposite-direction pickups until the assigned car finishes its current direction. **Reassign** clears waiting hall assignments each tick and rescores — parking (where idle cars wait) and dispatch are separate levers.
-
-**Example — sticky pathology** (Copy debug, seed 42, Stay, evening, tick ~645–650):
+Sticky pathology (seed 42, Stay, evening, ~tick 650):
 
 ```text
-## Metrics
-idleFrac: 62% (parking)
-completed: 74 / 80
-
-## Elevators
-E1: MOVING @ 4–9 ↑ load 4/8
-  riders: #77 L1→15, #78 L1→19, #79 L1→20, #80 L1→15
-  pickup: #76 @16→L1          ← down call stuck on up-bound car
-E3: IDLE @ 20 · load 0/8      ← closer to 16 than E1
-E4: IDLE @ 20 · load 0/8
-
-## Hall waiting
-16 (1): #76→L1 arr=619
+E1 MOVING ↑ load 4  pickup #76 @16→L1
+E3 IDLE @20
+E4 IDLE @20
 ```
 
-Cost *now* prefers E3/E4 (`|20−16|=4`) over E1, but `#76` was assigned at `arr=619` and never moved under sticky.
+Closer IDLE never steals under sticky. SCAN delays opposite-direction boarding further.
 
-**Benchmark (before → after).** Same Environment: evening, arrival 15%, interfloor 10%, 20F / 4 cars / cap 8 / dwell 2 / target 80, seeds **42…141**, Rank-by avg wait.
+Batch N=100, seeds 42…141, default evening Environment ([COMPARE](benchmarks/COMPARE.md)):
 
-| Strategy | Sticky mean wait | Reassign mean wait | Δ wait | Sticky max | Reassign max |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Lobby | 1.60 | 1.66 | +0.06 | 18.1 | 16.6 |
-| Demand | 1.64 | 1.67 | +0.03 | 18.0 | 16.2 |
-| Spread | 3.79 | 3.84 | +0.05 | 21.0 | 17.0 |
-| Mid | 4.17 | 5.02 | **+0.85** | 12.8 | 17.1 |
-| Stay | 6.23 | 6.04 | **−0.19** | 29.5 | **24.3** |
+| Strategy | Sticky wait | Reassign wait | Sticky max | Reassign max |
+| --- | ---: | ---: | ---: | ---: |
+| Lobby | 1.60 | 1.66 | 18.1 | 16.6 |
+| Mid | 4.17 | **5.02** | 12.8 | 17.1 |
+| Stay | 6.23 | 6.04 | 29.5 | **24.3** |
 
-Artifacts: [`benchmarks/sticky-n100-seed42/`](benchmarks/sticky-n100-seed42/) · [`benchmarks/reassign-n100-seed42/`](benchmarks/reassign-n100-seed42/)
+Reassign helps Stay’s long tail; Mid loses because empty mid cars greedily steal calls that ascending cars would have served en route (more empty travel). Cost is distance + load + light direction terms — not group ETA.
 
-**Read.** On this evening / parking-sensitive regime, reassign is **not** a free lunch on mean wait (Lobby/Demand already good; Mid gets worse). Stay’s **max wait** drops (~29 → ~24) — sticky’s long-tail pickups get stolen. Always Batch-before / Batch-after when changing dispatch.
+**Stopped here:** no idle-steal / margin variants. Portfolio story is complete without another dispatch mode.
 
-**Shipped.** Policy → **Hall dispatch** toggle (`sticky` | `reassign`); Batch/CSV include `hallDispatch`; headless CLI above.
+## 4. Strategy catalog + Batch
 
----
+Baselines: Stay / Lobby / Mid / Spread / Demand. Batch N + Rank-by (avg/max wait, empty, ticks) answers “who wins *this* regime?” — not a global optimum.
 
-## 4. Strategy catalog + Batch N
-
-**Claim.** There is no universal best parking policy. Rankings depend on traffic regime — like boarding methods. Use **Batch N** (and Rank-by) to see which baseline wins *for this Environment*, not “the” optimum.
-
-**Example.** Evening + moderate arrival (sticky baseline above): Lobby ≈ Demand win mean wait; Stay is last but cheapest empty travel. Morning egress often favors Spread / Demand-like coverage over Lobby. Rank-by **empty travel** can reorder winners.
-
-**Shipped.** Catalog in docs; Batch N + CSV; Rank-by avg/max wait, empty, ticks; Policy vs Environment panel split.
+Policy vs Environment vs Playback panels keep future zoning in the right place without building it yet.
 
 ---
 
-## Chronological update log
+## Scope freeze
 
-| When (approx) | Node | What changed |
-| --- | --- | --- |
-| Traffic docs | Environment knobs | Documented peak / arrival / interfloor OD |
-| Same-floor board | Dispatch | Board all same-direction waiters when doors open |
-| Copy debug | Ops | Seed + settings + elev/hall snapshot for forensics |
-| Parking vs zoning | Insight §1 | Document idle vs saturated levers |
-| Strategy catalog + Batch | Insight §4 | Baselines table + Monte Carlo N seeds |
-| Batch visual / Rank-by | Insight §4 | Readable ranking UI + objective toggle |
-| IdleFrac + panels | Insight §2 | Live/Batch Idle % + Policy/Environment/Playback |
-| Sticky assignment | Insight §3 | Document sticky nearest-car + snapshot example |
-| Hall reassign + Batch A/B | Insight §3 | Policy toggle; sticky vs reassign N=100 artifacts; Batch-before method |
+| In | Out (on purpose) |
+| --- | --- |
+| Parking catalog, IdleFrac, sticky/reassign, Batch A/B, Copy debug | idle-steal tuning, zoning code, office OD, energy, MDP lobby count |
+
+Further work only if a portfolio narrative needs it — not for local score chasing.
