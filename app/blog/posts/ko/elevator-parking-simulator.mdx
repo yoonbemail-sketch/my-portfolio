@@ -37,6 +37,12 @@ summary: '아파트 엘리베이터 파킹 시뮬 — 승객 시나리오를 고
 
 이 데모는 고정 시나리오에서 **파킹만** 비교합니다. Arrival rate를 올려 Compare all 하면 전략 간 차이가 줄고 IdleFrac가 떨어지는 경우가 많은데, 그건 “풀가동일 때는 파킹이 아니라 존”이라는 힌트입니다.
 
+### Sticky 홀콜 배정
+
+홀콜은 승객이 생긴 **그 순간의** nearest-car cost로 붙고, **한 번 붙으면 고정**입니다. 나중에 더 가까운 IDLE이 있어도 콜을 뺏지 않습니다. Copy debug에서 Stay + 고층 IDLE인데, 상행 중 차가 몇 층 아래 하행 콜을 들고 있는 장면이 나옵니다. SCAN이면 맡은 차가 현재 방향을 끝낸 뒤에야 반대 방향 픽업을 태울 수 있어 더 늦어집니다.
+
+파킹(유휴 배치)과 **콜 재배정**은 다른 레버입니다. IdleFrac가 높은데 대기가 길면 “빈 차는 있는데 sticky dispatch가 안 넘긴다”는 신호입니다.
+
 ## 전략 카탈로그
 
 **만능 1등 파킹은 없습니다.** 비행기 boarding(WilMA, back-to-front 등)처럼 제약이 바뀌면 순위가 바뀝니다.
@@ -49,7 +55,7 @@ summary: '아파트 엘리베이터 파킹 시뮬 — 승객 시나리오를 고
 | Spread | 축 균등 홈 | 하행 피크·출근 |
 | Demand | call heat | 적응 휴리스틱 |
 
-이후 후보: arrival-probability parking, up-peak MDP 로비 대수, proactive standby, 포화 시 **서비스 존**.
+이후 후보: **홀콜 재배정**, arrival-probability parking, up-peak MDP 로비 대수, proactive standby, 포화 시 **서비스 존**.
 
 ## Batch 실험
 

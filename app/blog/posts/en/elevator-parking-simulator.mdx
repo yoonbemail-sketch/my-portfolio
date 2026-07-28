@@ -37,6 +37,12 @@ In a **saturated** building, cars rarely park — they stay in service — so pa
 
 This demo isolates parking on a fixed passenger stream. Push arrival rate up in Compare all; shrinking gaps and falling IdleFrac are clues that zoning, not parking, is the next experiment when the bank is always busy.
 
+### Sticky hall-call assignment
+
+Hall calls are assigned with a nearest-car cost **when the passenger appears**, then **stick** — a later idle car that is closer does not steal the call. In Copy debug you may see high-floor IDLE cars (especially under Stay) while an up-bound loaded car still owns a down call a few floors below. SCAN delays that further: the assigned car finishes its current direction before boarding an opposite-direction pickup.
+
+Parking (where idle cars wait) and **call reassignment** are separate levers. High IdleFrac with long waits often means free cars exist, but sticky dispatch will not hand them the call.
+
 ## Strategy catalog
 
 There is **no single best parking policy**. Rankings depend on traffic — the same way airplane boarding methods (WilMA, back-to-front, random) trade off under different constraints.
@@ -49,7 +55,7 @@ There is **no single best parking policy**. Rankings depend on traffic — the s
 | Spread | Even homes along the shaft | Down-peak / egress |
 | Demand | Recent call heat | Adaptive heuristic |
 
-Research directions (future code): arrival-probability parking, MDP lobby-car counts for up-peak, proactive standby scores, and **service zoning** when saturated.
+Research directions (future code): **hall-call reassignment**, arrival-probability parking, MDP lobby-car counts for up-peak, proactive standby scores, and **service zoning** when saturated.
 
 ## Batch experiment
 
