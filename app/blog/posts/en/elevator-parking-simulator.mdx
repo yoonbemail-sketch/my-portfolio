@@ -35,13 +35,25 @@ Parking helps when cars are often **idle**. In light or moderate traffic, Stay /
 
 In a **saturated** building, cars rarely park — they stay in service — so parking policy has little leverage. The better lever is **service zoning** (odd/even floors, low/high banks): fewer stops per trip, less door time, shorter round trips.
 
-This demo isolates parking on a fixed passenger stream. Push arrival rate up in Compare all; shrinking gaps and falling IdleFrac are clues that zoning, not parking, is the next experiment when the bank is always busy.
+**Example.** Same seed, push arrival rate in Compare all → strategy gaps shrink and IdleFrac falls.
+
+This demo isolates parking on a fixed passenger stream. Full operational tree (parking / IdleFrac / sticky dispatch / Batch) with examples: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md).
 
 ### Sticky hall-call assignment
 
-Hall calls are assigned with a nearest-car cost **when the passenger appears**, then **stick** — a later idle car that is closer does not steal the call. In Copy debug you may see high-floor IDLE cars (especially under Stay) while an up-bound loaded car still owns a down call a few floors below. SCAN delays that further: the assigned car finishes its current direction before boarding an opposite-direction pickup.
+Hall calls are assigned with a nearest-car cost **when the passenger appears**, then **stick** — a later idle car that is closer does not steal the call. SCAN delays opposite-direction pickups until the assigned car finishes its current direction.
 
-Parking (where idle cars wait) and **call reassignment** are separate levers. High IdleFrac with long waits often means free cars exist, but sticky dispatch will not hand them the call.
+**Example** (Copy debug, seed 42, Stay, evening, tick 650, IdleFrac 62%):
+
+```text
+E1: MOVING @ 9 ↑ load 4/8
+  pickup: #76 @16→L1          ← down call on up-bound car
+E3: IDLE @ 20
+E4: IDLE @ 20                 ← closer to floor 16 than E1
+Hall 16: #76→L1 arr=619
+```
+
+Cost *now* prefers E3/E4, but `#76` was assigned at tick 619 and never reassigned. Parking (where idle cars wait) and **call reassignment** are separate levers — high IdleFrac with long waits often means free cars exist, but sticky dispatch will not hand them the call.
 
 ## Strategy catalog
 
