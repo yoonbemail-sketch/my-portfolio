@@ -32,6 +32,8 @@ let waiting = [];
 let alighted = [];
 let completedWaits = [];
 let emptyTravel = 0;
+/** Elevator-ticks spent in IDLE or PARKING (saturation inverse) */
+let idleCarTicks = 0;
 let completedCount = 0;
 let callHeat = {};
 let isRunning = false;
@@ -488,6 +490,9 @@ function simTick() {
     decayHeat();
     assignCalls();
     for (const elev of elevators) stepElevator(elev);
+    for (const elev of elevators) {
+        if (elev.state === 'IDLE' || elev.state === 'PARKING') idleCarTicks++;
+    }
     waiting = waiting.filter(p => p.state === 'WAITING');
 }
 
@@ -510,6 +515,7 @@ function resetRuntimeState() {
     waiting = [];
     completedWaits = [];
     emptyTravel = 0;
+    idleCarTicks = 0;
     completedCount = 0;
     callHeat = {};
     nextPassengerId = 1;
@@ -749,11 +755,45 @@ function avg(arr) {
     return arr.reduce((a, b) => a + b, 0) / arr.length;
 }
 
+/** IdleFrac = idle/parking car-ticks / (ticks × elevators) */
+function computeIdleFrac(idleTicks, ticks, elevCount) {
+    const denom = ticks * elevCount;
+    return denom > 0 ? idleTicks / denom : 0;
+}
+
+/** Regime hint from IdleFrac — diagnostic, not a ranking objective */
+function regimeFromIdleFrac(frac) {
+    if (frac >= 0.25) return 'parking-sensitive';
+    if (frac < 0.10) return 'saturated';
+    return 'mixed';
+}
+
+const REGIME_LABELS = {
+    'parking-sensitive': 'parking',
+    saturated: 'saturated',
+    mixed: 'mixed',
+};
+
+function formatIdleFracPct(frac) {
+    return `${Math.round(frac * 100)}%`;
+}
+
+function formatRegimeLine(frac) {
+    const regime = regimeFromIdleFrac(frac);
+    return {
+        regime,
+        text: `Idle ${formatIdleFracPct(frac)} · ${REGIME_LABELS[regime] || regime}`,
+    };
+}
+
 function snapshotMetrics() {
+    const idleFrac = computeIdleFrac(idleCarTicks, tickCount, elevatorCount);
     return {
         avgWait: avg(completedWaits),
         maxWait: completedWaits.length ? Math.max(...completedWaits) : 0,
         emptyTravel,
+        idleCarTicks,
+        idleFrac,
         ticks: tickCount,
         completed: completedCount,
     };
@@ -765,6 +805,14 @@ function updateDashboard() {
     document.getElementById('stat-max-wait').textContent = String(m.maxWait);
     document.getElementById('stat-completed').textContent = `${m.completed} / ${targetPassengers}`;
     document.getElementById('stat-empty').textContent = String(m.emptyTravel);
+    const idleEl = document.getElementById('stat-idle-frac');
+    if (idleEl) idleEl.textContent = formatIdleFracPct(m.idleFrac);
+    const regimeEl = document.getElementById('stat-regime');
+    if (regimeEl) {
+        const regime = regimeFromIdleFrac(m.idleFrac);
+        regimeEl.textContent = REGIME_LABELS[regime] || regime;
+        regimeEl.dataset.regime = regime;
+    }
     const ticksEl = document.getElementById('stat-ticks');
     if (ticksEl) ticksEl.textContent = String(m.ticks);
     document.getElementById('progress-fill').style.width =
@@ -860,6 +908,7 @@ function formatDebugSnapshot() {
         `avgWait: ${m.avgWait ? m.avgWait.toFixed(2) : '0'}`,
         `maxWait: ${m.maxWait}`,
         `emptyTravel: ${m.emptyTravel}`,
+        `idleFrac: ${formatIdleFracPct(m.idleFrac)} (${REGIME_LABELS[regimeFromIdleFrac(m.idleFrac)] || regimeFromIdleFrac(m.idleFrac)})`,
         `completed: ${m.completed} / ${targetPassengers}`,
         `waiting: ${waiting.filter(p => p.state === 'WAITING').length}`,
         `scenarioTrips: ${scenario.length} (cursor ${scenarioCursor})`,
@@ -1074,6 +1123,8 @@ function compareStrategies() {
 
     const bestWait = Math.min(...results.map(r => r.avgWait || Infinity));
     const bestEmpty = Math.min(...results.map(r => r.emptyTravel));
+    const meanIdle = mean(results.map(r => r.idleFrac));
+    const compareRegime = formatRegimeLine(meanIdle);
 
     const tbody = document.querySelector('#compare-table tbody');
     tbody.innerHTML = '';
@@ -1086,10 +1137,17 @@ function compareStrategies() {
             <td class="num">${r.avgWait.toFixed(1)}</td>
             <td class="num">${r.maxWait}</td>
             <td class="num ${r.emptyTravel === bestEmpty ? 'best-empty' : ''}">${r.emptyTravel}</td>
+            <td class="num">${formatIdleFracPct(r.idleFrac)}</td>
             <td class="num">${r.ticks}</td>
             <td class="num">${r.completed}</td>
         `;
         tbody.appendChild(tr);
+    }
+    const regimeLine = document.getElementById('compare-regime');
+    if (regimeLine) {
+        regimeLine.textContent = compareRegime.text;
+        regimeLine.dataset.regime = compareRegime.regime;
+        regimeLine.hidden = false;
     }
     const settingsEl = document.getElementById('compare-settings');
     if (settingsEl) {
@@ -1133,7 +1191,7 @@ const RANK_METRICS = {
         rowKey: 'ticks',
         meanKey: 'meanTicks',
         stdKey: 'stdTicks',
-        colIndex: 6,
+        colIndex: 7,
     },
 };
 
@@ -1164,7 +1222,7 @@ function batchSettingsLine(n, baseSeed) {
     ].join(' · ');
 }
 
-function renderBatchSettings(n, baseSeed) {
+function renderBatchSettings(n, baseSeed, regimeInfo) {
     const el = document.getElementById('batch-settings');
     if (!el) return;
     const chips = [
@@ -1179,7 +1237,13 @@ function renderBatchSettings(n, baseSeed) {
         `arrival ${Math.round(arrivalRate * 100)}%`,
         `target ${targetPassengers}`,
     ];
-    el.innerHTML = chips.map(c => `<span class="chip">${c}</span>`).join('');
+    const parts = chips.map(c => `<span class="chip">${c}</span>`);
+    if (regimeInfo) {
+        parts.push(
+            `<span class="chip regime-chip" data-regime="${regimeInfo.regime}">${regimeInfo.text}</span>`
+        );
+    }
+    el.innerHTML = parts.join('');
 }
 
 function setBatchProgress(done, total, label) {
@@ -1200,6 +1264,7 @@ function summarizeBatch(rows, metric = batchRankMetric) {
             waits: [],
             maxWaits: [],
             empties: [],
+            idleFracs: [],
             ticks: [],
             wins: 0,
             incomplete: 0,
@@ -1217,6 +1282,7 @@ function summarizeBatch(rows, metric = batchRankMetric) {
         bucket.waits.push(r.avgWait);
         bucket.maxWaits.push(r.maxWait);
         bucket.empties.push(r.emptyTravel);
+        bucket.idleFracs.push(r.idleFrac);
         bucket.ticks.push(r.ticks);
         if (r.completed < r.target) bucket.incomplete++;
     }
@@ -1233,6 +1299,7 @@ function summarizeBatch(rows, metric = batchRankMetric) {
     }
 
     const seedCount = Object.keys(bySeed).length || 1;
+    const overallIdle = mean(rows.map(r => r.idleFrac));
     return STRATEGIES.map(s => {
         const b = byStrategy[s];
         return {
@@ -1243,12 +1310,16 @@ function summarizeBatch(rows, metric = batchRankMetric) {
             stdMaxWait: stdev(b.maxWaits),
             meanEmpty: mean(b.empties),
             stdEmpty: stdev(b.empties),
+            meanIdleFrac: mean(b.idleFracs),
+            stdIdleFrac: stdev(b.idleFracs),
             meanTicks: mean(b.ticks),
             stdTicks: stdev(b.ticks),
             winRate: (b.wins / seedCount) * 100,
             incomplete: b.incomplete,
             n: b.n,
             metric,
+            overallIdleFrac: overallIdle,
+            overallRegime: regimeFromIdleFrac(overallIdle),
         };
     });
 }
@@ -1257,14 +1328,15 @@ function formatBatchCsv(rows) {
     const header = [
         'seed', 'strategy', 'peak', 'interfloor', 'dwell', 'floors', 'elevators',
         'capacity', 'arrival', 'target', 'trips', 'avgWait', 'maxWait',
-        'emptyTravel', 'ticks', 'completed',
+        'emptyTravel', 'idleFrac', 'ticks', 'completed',
     ];
     const lines = [header.join(',')];
     for (const r of rows) {
         lines.push([
             r.seed, r.strategy, r.peak, r.interfloor, r.dwell, r.floors, r.elevators,
             r.capacity, r.arrival, r.target, r.trips,
-            r.avgWait.toFixed(4), r.maxWait, r.emptyTravel, r.ticks, r.completed,
+            r.avgWait.toFixed(4), r.maxWait, r.emptyTravel,
+            r.idleFrac.toFixed(4), r.ticks, r.completed,
         ].join(','));
     }
     return lines.join('\n') + '\n';
@@ -1272,9 +1344,12 @@ function formatBatchCsv(rows) {
 
 function formatBatchSummaryText(summary, n, baseSeed) {
     const cfg = RANK_METRICS[batchRankMetric] || RANK_METRICS.avgWait;
+    const overallIdle = summary[0] ? summary[0].overallIdleFrac : 0;
+    const regimeLine = formatRegimeLine(overallIdle);
     const lines = [
         'Elevator Parking — batch summary',
         batchSettingsLine(n, baseSeed),
+        regimeLine.text,
         `objective: minimize ${cfg.label}`,
         '',
         `Ranked by mean ${cfg.label}:`,
@@ -1286,6 +1361,7 @@ function formatBatchSummaryText(summary, n, baseSeed) {
             `avgWait ${s.meanWait.toFixed(2)}±${s.stdWait.toFixed(2)}  ` +
             `maxWait ${s.meanMaxWait.toFixed(2)}  ` +
             `empty ${s.meanEmpty.toFixed(1)}  ` +
+            `idle ${formatIdleFracPct(s.meanIdleFrac)}  ` +
             `ticks ${s.meanTicks.toFixed(1)}  ` +
             `win ${s.winRate.toFixed(0)}%  ` +
             `incomplete ${s.incomplete}`
@@ -1319,6 +1395,13 @@ function renderBatchSummary(summary) {
         th.classList.toggle('is-objective', idx === cfg.colIndex);
     });
 
+    if (summary[0]) {
+        const n = summary[0].n;
+        const baseSeed = batchRows.length ? batchRows[0].seed : scenarioSeed;
+        const seedCount = batchRows.length / STRATEGIES.length;
+        renderBatchSettings(seedCount || n, baseSeed, formatRegimeLine(summary[0].overallIdleFrac));
+    }
+
     ranked.forEach((s, i) => {
         const tr = document.createElement('tr');
         tr.classList.add(`rank-${i + 1}`);
@@ -1331,6 +1414,7 @@ function renderBatchSummary(summary) {
             `<td class="num">${s.stdWait.toFixed(2)}</td>`,
             `<td class="num${batchRankMetric === 'maxWait' ? ' is-objective' : ''}">${s.meanMaxWait.toFixed(1)}</td>`,
             `<td class="num${batchRankMetric === 'emptyTravel' ? ' is-objective' : ''}">${s.meanEmpty.toFixed(1)}</td>`,
+            `<td class="num">${formatIdleFracPct(s.meanIdleFrac)}</td>`,
             `<td class="num${batchRankMetric === 'ticks' ? ' is-objective' : ''}">${s.meanTicks.toFixed(1)}</td>`,
             `<td class="col-win">
                 <div class="win-cell">
@@ -1430,6 +1514,7 @@ async function runBatchCompare() {
                     avgWait: m.avgWait,
                     maxWait: m.maxWait,
                     emptyTravel: m.emptyTravel,
+                    idleFrac: m.idleFrac,
                     ticks: m.ticks,
                     completed: m.completed,
                 });
