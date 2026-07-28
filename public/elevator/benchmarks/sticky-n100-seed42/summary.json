@@ -1,0 +1,81 @@
+{
+  "createdAt": "2026-07-28T05:25:00.783Z",
+  "elapsedMs": 214,
+  "settings": {
+    "hallDispatch": "sticky",
+    "n": 100,
+    "baseSeed": 42,
+    "peak": "evening",
+    "arrival": 0.15,
+    "interfloor": 0.1,
+    "floors": 20,
+    "elevators": 4,
+    "capacity": 8,
+    "dwell": 2,
+    "target": 80
+  },
+  "rankingByAvgWait": [
+    {
+      "rank": 1,
+      "strategy": "lobby",
+      "meanWait": 1.598124999999999,
+      "stdWait": 0.5177572038088505,
+      "meanMaxWait": 18.13,
+      "meanEmpty": 586.01,
+      "meanIdleFrac": 0.505876320251333,
+      "meanTicks": 545.28,
+      "winRate": 79,
+      "incomplete": 0
+    },
+    {
+      "rank": 2,
+      "strategy": "demand",
+      "meanWait": 1.6404999999999996,
+      "stdWait": 0.5217404827240564,
+      "meanMaxWait": 18.03,
+      "meanEmpty": 642.65,
+      "meanIdleFrac": 0.5079125961300417,
+      "meanTicks": 545.28,
+      "winRate": 44,
+      "incomplete": 0
+    },
+    {
+      "rank": 3,
+      "strategy": "spread",
+      "meanWait": 3.7878749999999983,
+      "stdWait": 0.5017534122877733,
+      "meanMaxWait": 21.01,
+      "meanEmpty": 499.93,
+      "meanIdleFrac": 0.5530213873991814,
+      "meanTicks": 549.81,
+      "winRate": 0,
+      "incomplete": 0
+    },
+    {
+      "rank": 4,
+      "strategy": "mid",
+      "meanWait": 4.1667499999999995,
+      "stdWait": 0.3558015740563975,
+      "meanMaxWait": 12.77,
+      "meanEmpty": 491.58,
+      "meanIdleFrac": 0.5451219849396597,
+      "meanTicks": 549.88,
+      "winRate": 0,
+      "incomplete": 0
+    },
+    {
+      "rank": 5,
+      "strategy": "stay",
+      "meanWait": 6.227375,
+      "stdWait": 0.9700139522452782,
+      "meanMaxWait": 29.5,
+      "meanEmpty": 259.44,
+      "meanIdleFrac": 0.575487844079135,
+      "meanTicks": 554.77,
+      "winRate": 0,
+      "incomplete": 0
+    }
+  ],
+  "overallIdleFrac": 0.5374840265598702,
+  "overallRegime": "parking-sensitive"
+}

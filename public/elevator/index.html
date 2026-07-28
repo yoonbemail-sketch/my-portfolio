@@ -75,7 +75,7 @@
                 <fieldset class="panel-section">
                     <legend>Policy</legend>
                     <p class="hint panel-hint">Where idle cars wait. Zoning can sit here later.</p>
-                    <div class="field">
+            <div class="field">
                         <label for="strategy-select">Parking strategy</label>
                         <select id="strategy-select">
                             <option value="stay">Stay — last floor</option>
@@ -84,6 +84,14 @@
                             <option value="spread">Spread — even homes</option>
                             <option value="demand">Demand — hot floors</option>
                         </select>
+                    </div>
+                    <div class="field">
+                        <label for="dispatch-select">Hall dispatch</label>
+                        <select id="dispatch-select">
+                            <option value="sticky">Sticky — assign once</option>
+                            <option value="reassign">Reassign — rescore each tick</option>
+                        </select>
+                        <p class="hint">Sticky keeps the first car; reassign lets nearer idle cars steal waiting hall calls.</p>
                     </div>
                 </fieldset>
 
