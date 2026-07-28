@@ -168,7 +168,7 @@ const educationKo: EducationItem[] = [
 const certificationsEn: CertificationItem[] = [
   {
     id: 'pl-300',
-    dateLabel: 'Jul 2026',
+    dateLabel: 'Dec 2025',
     name: 'PL-300 · Power BI Data Analyst Associate',
     issuer: 'Microsoft',
     href: '/certs/PL-300.pdf',
@@ -185,7 +185,7 @@ const certificationsEn: CertificationItem[] = [
 const certificationsKo: CertificationItem[] = [
   {
     id: 'pl-300',
-    dateLabel: '2026.07',
+    dateLabel: '2025.12',
     name: 'PL-300 · Power BI Data Analyst Associate',
     issuer: 'Microsoft',
     href: '/certs/PL-300.pdf',
