@@ -18,6 +18,14 @@ export type EducationItem = {
   detail: string
 }
 
+export type CertificationItem = {
+  id: string
+  dateLabel: string
+  name: string
+  issuer: string
+  href: string
+}
+
 /** Public subset for the portfolio. Keep in sync with LinkedIn / resume hub. */
 const experienceEn: ExperienceItem[] = [
   {
@@ -157,10 +165,48 @@ const educationKo: EducationItem[] = [
   },
 ]
 
+const certificationsEn: CertificationItem[] = [
+  {
+    id: 'pl-300',
+    dateLabel: 'Jul 2026',
+    name: 'PL-300 · Power BI Data Analyst Associate',
+    issuer: 'Microsoft',
+    href: '/certs/PL-300.pdf',
+  },
+  {
+    id: 'lssgb',
+    dateLabel: 'Jun 2026',
+    name: 'Lean Six Sigma Green Belt (LSSGB)',
+    issuer: 'Lean Six Sigma',
+    href: '/certs/LSSGB.pdf',
+  },
+]
+
+const certificationsKo: CertificationItem[] = [
+  {
+    id: 'pl-300',
+    dateLabel: '2026.07',
+    name: 'PL-300 · Power BI Data Analyst Associate',
+    issuer: 'Microsoft',
+    href: '/certs/PL-300.pdf',
+  },
+  {
+    id: 'lssgb',
+    dateLabel: '2026.06',
+    name: 'Lean Six Sigma Green Belt (LSSGB)',
+    issuer: 'Lean Six Sigma',
+    href: '/certs/LSSGB.pdf',
+  },
+]
+
 export function getExperience(locale: Locale): ExperienceItem[] {
   return locale === 'ko' ? experienceKo : experienceEn
 }
 
 export function getEducation(locale: Locale): EducationItem[] {
   return locale === 'ko' ? educationKo : educationEn
+}
+
+export function getCertifications(locale: Locale): CertificationItem[] {
+  return locale === 'ko' ? certificationsKo : certificationsEn
 }

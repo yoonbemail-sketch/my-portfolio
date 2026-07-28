@@ -6,6 +6,8 @@ type Dictionary = {
     home: string
     experience: string
     projects: string
+    certifications: string
+    education: string
     language: string
   }
   home: {
@@ -14,6 +16,8 @@ type Dictionary = {
     projectsLead: string
     experienceHeading: string
     projectsHeading: string
+    certificationsHeading: string
+    certificatePdf: string
     educationHeading: string
   }
   projects: {
@@ -41,6 +45,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       home: '홈',
       experience: '경력',
       projects: '프로젝트',
+      certifications: '자격증',
+      education: '학력',
       language: '언어',
     },
     home: {
@@ -51,6 +57,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
         '물류·품질·재고 현장에서 쌓은 운영 경험과, 분석·자동화 프로젝트를 아래에 정리합니다.',
       experienceHeading: '경력',
       projectsHeading: '프로젝트',
+      certificationsHeading: '자격증',
+      certificatePdf: '자격증 PDF 보기',
       educationHeading: '학력',
     },
     projects: {
@@ -76,6 +84,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
       home: 'home',
       experience: 'experience',
       projects: 'projects',
+      certifications: 'certifications',
+      education: 'education',
       language: 'Language',
     },
     home: {
@@ -86,6 +96,8 @@ export const dictionaries: Record<Locale, Dictionary> = {
         'Below is a selection of operations experience from logistics, quality, and inventory work, plus analytics and automation projects.',
       experienceHeading: 'Experience',
       projectsHeading: 'Projects',
+      certificationsHeading: 'Certifications',
+      certificatePdf: 'View certificate PDF',
       educationHeading: 'Education',
     },
     projects: {

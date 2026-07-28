@@ -9,6 +9,8 @@ export function Navbar({ locale }: { locale: Locale }) {
     { href: '/', name: t.nav.home },
     { href: '/#experience', name: t.nav.experience },
     { href: '/#projects', name: t.nav.projects },
+    { href: '/#certifications', name: t.nav.certifications },
+    { href: '/#education', name: t.nav.education },
   ]
 
   return (

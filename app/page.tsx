@@ -1,5 +1,9 @@
 import { BlogPosts } from 'app/components/posts'
-import { Experience } from 'app/components/experience'
+import {
+  Certifications,
+  Education,
+  Experience,
+} from 'app/components/experience'
 import { getDictionary } from 'app/i18n/dictionaries'
 import { getLocale } from 'app/i18n/get-locale'
 
@@ -34,7 +38,11 @@ export default async function Page() {
         <Experience locale={locale} />
       </section>
 
-      <section id="projects" aria-labelledby="projects-heading">
+      <section
+        id="projects"
+        aria-labelledby="projects-heading"
+        className="mb-14"
+      >
         <h2
           id="projects-heading"
           className="mb-6 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
@@ -42,6 +50,30 @@ export default async function Page() {
           {t.home.projectsHeading}
         </h2>
         <BlogPosts locale={locale} />
+      </section>
+
+      <section
+        id="certifications"
+        aria-labelledby="certifications-heading"
+        className="mb-14"
+      >
+        <h2
+          id="certifications-heading"
+          className="mb-6 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
+        >
+          {t.home.certificationsHeading}
+        </h2>
+        <Certifications locale={locale} />
+      </section>
+
+      <section id="education" aria-labelledby="education-heading">
+        <h2
+          id="education-heading"
+          className="mb-6 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
+        >
+          {t.home.educationHeading}
+        </h2>
+        <Education locale={locale} />
       </section>
     </section>
   )
