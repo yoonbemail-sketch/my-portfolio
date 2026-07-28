@@ -6,7 +6,7 @@ summary: 'Trade-history collection → sales fact → Power BI for premium, seas
 
 An Operations Analyst project on Kream sneakers resale: collect trade history by size, clean it into a sales fact, and analyze premiums and signals in Power BI.
 
-Source code and the Power BI workspace stay private.
+Source code stays private. The live dashboard below is shared with Publish to web.
 
 ## Problem
 
@@ -88,7 +88,12 @@ Key measures: `%Average Premium`, `Daily Avg Price`, Bollinger / RSI / Trend sig
 
 ## Dashboard
 
-Instead of a public embed (free-license limit), the report pages are:
+<PowerBIEmbed
+  src="https://app.powerbi.com/view?r=eyJrIjoiMWE1NDc3ZDktNWVjNS00ZDJlLTg2NTEtMjk4MDNiOTE1MTE3IiwidCI6ImViMWYwODU3LTNiNTEtNDU3Zi05NTM2LWEwNzAyMDBiYjJmMiJ9&pageName=b42bd021ce2683771eed"
+  title="Kream resale dashboard"
+/>
+
+Report pages:
 
 | Page | Contents |
 | --- | --- |
@@ -129,4 +134,4 @@ DIVIDE (
 
 ## Results
 
-Built a trade collector that can resume and update by size, exported a sales fact, and connected it to Power BI pages for premium, price, and signals. Public embedding is omitted due to license limits; this page summarizes the collection approach and the dashboard.
+Built a trade collector that can resume and update by size, exported a sales fact, and connected it to a Power BI report for premium, price, and signals — embedded above.
