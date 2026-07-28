@@ -9,6 +9,8 @@ type Metadata = {
   publishedAt: string
   summary: string
   image?: string
+  /** When true, omit from listings, sitemap, and RSS (direct URL → 404). */
+  hidden?: boolean
 }
 
 function parseFrontmatter(fileContent: string) {
@@ -21,9 +23,14 @@ function parseFrontmatter(fileContent: string) {
 
   frontMatterLines.forEach((line) => {
     let [key, ...valueArr] = line.split(': ')
+    let rawKey = key.trim()
     let value = valueArr.join(': ').trim()
     value = value.replace(/^['"](.*)['"]$/, '$1') // Remove quotes
-    metadata[key.trim() as keyof Metadata] = value
+    if (rawKey === 'hidden') {
+      metadata.hidden = value === 'true'
+      return
+    }
+    metadata[rawKey as keyof Omit<Metadata, 'hidden'>] = value
   })
 
   return { metadata: metadata as Metadata, content }
@@ -53,7 +60,9 @@ function getMDXData(dir: string) {
 }
 
 export function getBlogPosts(locale: Locale = defaultLocale) {
-  return getMDXData(path.join(process.cwd(), 'app', 'blog', 'posts', locale))
+  return getMDXData(path.join(process.cwd(), 'app', 'blog', 'posts', locale)).filter(
+    (post) => !post.metadata.hidden
+  )
 }
 
 export function formatDate(
