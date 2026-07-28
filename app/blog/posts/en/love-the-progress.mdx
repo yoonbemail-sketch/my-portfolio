@@ -1,74 +1,68 @@
 ---
 title: 'Love the progress'
 publishedAt: '2026-07-20'
-summary: 'Database schema and backend logic design for a progress-focused product experience.'
+summary: 'Digitize a physical daily habit pegboard into an 8-bit photo diary and quest tracker — stage map, photo hotspots, LocalStorage MVP.'
 hidden: true
 ---
 
-A product-oriented project that shows how progress is stored, updated, and served. Emphasis is on schema clarity and backend rules rather than UI polish.
+A personal habit planner (closer to a quest tracker than a journal) that turns a physical pegboard into an interactive **8-bit** web app: daily main/side quests, a stage map, and photo hotspots mapped onto the real board.
 
 ## Product intent
 
-Track meaningful progress over time so users can see movement, not only snapshots. The data model should make “what changed” and “why it counts” easy to query.
+Keep the ritual of the physical board, but make progress legible over time — stage clears, coin/score from side quests, and a photo diary where each magnet can hold a note or sub-photo.
 
-## Database schema (draft)
+## Tech stack (MVP)
 
-Outline entities and relationships here:
+- **Frontend:** Next.js (React) or plain HTML/Vanilla JS, whichever stays lightest for MVP
+- **UI:** NES.css (8-bit Mario/Kirby feel) + layout CSS
+- **Storage:** `localStorage` with a JSON shape that can migrate to a DB later
 
-```text
-users
-  └── goals
-        └── milestones
-              └── progress_events
+## Core features
 
-optional:
-  tags / categories
-  reflections / notes
-  audit_log
+### A. Stage & progress (8-bit map)
+
+**Main Quests** (required to advance the stage that day):
+
+1. Exercise
+2. Data analysis / SQL study
+3. Apply to at least one Operations Analyst (or similar) role
+
+**Side Quests** (bonus coins/score): laundry, cleaning, reading, etc.
+
+When all three Main Quests are done for the day, the character moves to the next stage on a 2D map. Side Quests only add score/coins.
+
+### B. Daily photo + hotspot mapping
+
+- Upload a photo of that day’s physical pegboard
+- Click magnet/sticker positions to create hotspots (`x_percent`, `y_percent`)
+- Persist image data (Base64 or object URL) with the hotspot array for that date
+
+### C. Photo diary & modal
+
+- Gallery/calendar grid of past days
+- Open a day → full photo with absolute-positioned hotspot markers
+- Click a hotspot → note text and optional sub-photo for that quest/magnet
+
+## Data shape (JSON)
+
+```json
+{
+  "date": "2026-07-28",
+  "mainQuests": { "exercise": true, "study": true, "jobApply": true },
+  "sideQuests": { "laundry": false, "reading": true },
+  "mainPhoto": "data:image/jpeg;base64,...",
+  "hotspots": [
+    {
+      "id": "hs_1",
+      "x_percent": 45.2,
+      "y_percent": 30.5,
+      "note": "Finished SQL query optimization",
+      "subPhoto": null
+    }
+  ]
+}
 ```
 
-### Suggested tables
+## Status
 
-| Table | Purpose | Key fields |
-| --- | --- | --- |
-| `users` | Account identity | `id`, `email`, `created_at` |
-| `goals` | Long-running outcomes | `id`, `user_id`, `title`, `status`, `target_date` |
-| `milestones` | Checkpoints on a goal | `id`, `goal_id`, `title`, `sequence`, `completed_at` |
-| `progress_events` | Append-only activity | `id`, `goal_id`, `milestone_id?`, `kind`, `value`, `occurred_at` |
-
-Constraints worth calling out:
-
-- Progress events are **append-only** (corrections via compensating events, not silent edits)
-- Milestone completion is derived or explicitly set with a clear rule in the backend
-- Foreign keys and cascading rules documented (restrict vs cascade)
-
-## Backend logic
-
-Describe the domain rules the API enforces:
-
-1. **Create goal** — validate ownership; default status; optional first milestone
-2. **Record progress** — reject events that violate goal status (e.g. archived goals)
-3. **Complete milestone** — idempotent completion; emit a progress event in the same transaction
-4. **Read progress timeline** — ordered by `occurred_at`; support filters by goal / kind
-
-Example transaction boundary:
-
-```text
-BEGIN
-  insert progress_event
-  update milestone.completed_at (if applicable)
-  recompute goal status (if all milestones done)
-COMMIT
-```
-
-## Trade-offs
-
-- Append-only events cost storage but simplify audit and “love the progress” storytelling
-- Derived status vs stored status: pick one source of truth and document it
-- Soft delete vs hard delete for goals users abandon
-
-## Next steps (draft)
-
-- [ ] ERD diagram or migration snippets
-- [ ] API route list (REST or RPC) with auth boundaries
-- [ ] Sample queries for weekly progress summaries
+Hidden draft / spec — not shipped on the public projects list yet.
