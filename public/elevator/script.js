@@ -19,6 +19,8 @@ let capacity = 8;
 let arrivalRate = 0.15;
 let peakMode = 'evening';
 let parkingStrategy = 'stay';
+/** sticky = assign once; reassign = rescore all waiting hall calls each tick */
+let hallDispatch = 'sticky';
 let interfloorRate = 0.10;
 let doorDwell = 2;
 let targetPassengers = 80;
@@ -313,7 +315,13 @@ function shouldStopAtFloor(elev) {
     return false;
 }
 
+function clearHallAssignments() {
+    for (const e of elevators) e.assigned = [];
+}
+
 function assignCalls() {
+    if (hallDispatch === 'reassign') clearHallAssignments();
+
     const pool = unassignedWaiting();
     pool.sort((a, b) => a.arriveTick - b.arriveTick);
 
@@ -892,6 +900,7 @@ function formatDebugSnapshot() {
         '## Settings',
         `seed: ${scenarioSeed}`,
         `strategy: ${parkingStrategy} (${STRATEGY_LABELS[parkingStrategy] || parkingStrategy})`,
+        `hallDispatch: ${hallDispatch}`,
         `traffic: ${peakMode}`,
         `interfloor: ${Math.round(interfloorRate * 100)}%`,
         `doorDwell: ${doorDwell}`,
@@ -1030,6 +1039,8 @@ function readControls() {
     doorDwell = Number(document.getElementById('dwell-range').value);
     targetPassengers = Number(document.getElementById('target-range').value);
     parkingStrategy = document.getElementById('strategy-select').value;
+    const dispatchEl = document.getElementById('dispatch-select');
+    hallDispatch = dispatchEl ? dispatchEl.value : 'sticky';
     peakMode = document.getElementById('peak-select').value;
     const seedInput = document.getElementById('seed-input');
     scenarioSeed = Number(seedInput.value) || 1;
@@ -1093,6 +1104,7 @@ function runHeadless(strategy) {
 function formatCompareSettings() {
     return [
         `seed ${scenarioSeed}`,
+        `dispatch ${hallDispatch}`,
         peakMode,
         `interfloor ${Math.round(interfloorRate * 100)}%`,
         `dwell ${doorDwell}`,
@@ -1211,6 +1223,7 @@ function batchSettingsLine(n, baseSeed) {
     return [
         `N=${n}`,
         `seeds ${baseSeed}…${baseSeed + n - 1}`,
+        `dispatch ${hallDispatch}`,
         peakMode,
         `interfloor ${Math.round(interfloorRate * 100)}%`,
         `dwell ${doorDwell}`,
@@ -1228,6 +1241,7 @@ function renderBatchSettings(n, baseSeed, regimeInfo) {
     const chips = [
         `N=${n}`,
         `${baseSeed}–${baseSeed + n - 1}`,
+        `dispatch ${hallDispatch}`,
         peakMode,
         `interfloor ${Math.round(interfloorRate * 100)}%`,
         `dwell ${doorDwell}`,
@@ -1326,14 +1340,14 @@ function summarizeBatch(rows, metric = batchRankMetric) {
 
 function formatBatchCsv(rows) {
     const header = [
-        'seed', 'strategy', 'peak', 'interfloor', 'dwell', 'floors', 'elevators',
+        'seed', 'strategy', 'hallDispatch', 'peak', 'interfloor', 'dwell', 'floors', 'elevators',
         'capacity', 'arrival', 'target', 'trips', 'avgWait', 'maxWait',
         'emptyTravel', 'idleFrac', 'ticks', 'completed',
     ];
     const lines = [header.join(',')];
     for (const r of rows) {
         lines.push([
-            r.seed, r.strategy, r.peak, r.interfloor, r.dwell, r.floors, r.elevators,
+            r.seed, r.strategy, r.hallDispatch, r.peak, r.interfloor, r.dwell, r.floors, r.elevators,
             r.capacity, r.arrival, r.target, r.trips,
             r.avgWait.toFixed(4), r.maxWait, r.emptyTravel,
             r.idleFrac.toFixed(4), r.ticks, r.completed,
@@ -1495,6 +1509,7 @@ async function runBatchCompare() {
 
             const meta = {
                 seed: scenarioSeed,
+                hallDispatch,
                 peak: peakMode,
                 interfloor: Math.round(interfloorRate * 100),
                 dwell: doorDwell,
@@ -1743,5 +1758,113 @@ try {
 } catch (_) {
     document.documentElement.classList.add('embed');
 }
+
+/** Headless API for CLI benchmarks (linkedom / Node). */
+globalThis.ElevatorSim = {
+    STRATEGIES,
+    STRATEGY_LABELS,
+    applySettings(opts = {}) {
+        if (opts.floors != null) {
+            floors = opts.floors;
+            const el = document.getElementById('floors-range');
+            if (el) el.value = String(floors);
+        }
+        if (opts.elevatorCount != null) {
+            elevatorCount = opts.elevatorCount;
+            const el = document.getElementById('elevators-range');
+            if (el) el.value = String(elevatorCount);
+        }
+        if (opts.capacity != null) {
+            capacity = opts.capacity;
+            const el = document.getElementById('capacity-range');
+            if (el) el.value = String(capacity);
+        }
+        if (opts.arrivalRate != null) {
+            arrivalRate = opts.arrivalRate;
+            const el = document.getElementById('arrival-range');
+            if (el) el.value = String(Math.round(arrivalRate * 100));
+        }
+        if (opts.interfloorRate != null) {
+            interfloorRate = opts.interfloorRate;
+            const el = document.getElementById('interfloor-range');
+            if (el) el.value = String(Math.round(interfloorRate * 100));
+        }
+        if (opts.doorDwell != null) {
+            doorDwell = opts.doorDwell;
+            const el = document.getElementById('dwell-range');
+            if (el) el.value = String(doorDwell);
+        }
+        if (opts.targetPassengers != null) {
+            targetPassengers = opts.targetPassengers;
+            const el = document.getElementById('target-range');
+            if (el) el.value = String(targetPassengers);
+        }
+        if (opts.peakMode != null) {
+            peakMode = opts.peakMode;
+            const el = document.getElementById('peak-select');
+            if (el) el.value = peakMode;
+        }
+        if (opts.hallDispatch != null) {
+            hallDispatch = opts.hallDispatch;
+            const el = document.getElementById('dispatch-select');
+            if (el) el.value = hallDispatch;
+        }
+        if (opts.parkingStrategy != null) {
+            parkingStrategy = opts.parkingStrategy;
+            const el = document.getElementById('strategy-select');
+            if (el) el.value = parkingStrategy;
+        }
+        if (opts.scenarioSeed != null) {
+            scenarioSeed = opts.scenarioSeed;
+            const el = document.getElementById('seed-input');
+            if (el) el.value = String(scenarioSeed);
+        }
+        scenarioKey = '';
+    },
+    runBatchSync({ n = 100, baseSeed = 42 } = {}) {
+        stopSim();
+        const rows = [];
+        for (let i = 0; i < n; i++) {
+            scenarioSeed = baseSeed + i;
+            const seedInput = document.getElementById('seed-input');
+            if (seedInput) seedInput.value = String(scenarioSeed);
+            scenarioKey = '';
+            ensureScenario(true);
+            const meta = {
+                seed: scenarioSeed,
+                hallDispatch,
+                peak: peakMode,
+                interfloor: Math.round(interfloorRate * 100),
+                dwell: doorDwell,
+                floors,
+                elevators: elevatorCount,
+                capacity,
+                arrival: Math.round(arrivalRate * 100),
+                target: targetPassengers,
+                trips: scenario.length,
+            };
+            for (const strategy of STRATEGIES) {
+                const m = runHeadless(strategy);
+                rows.push({
+                    ...meta,
+                    strategy: m.strategy,
+                    avgWait: m.avgWait,
+                    maxWait: m.maxWait,
+                    emptyTravel: m.emptyTravel,
+                    idleFrac: m.idleFrac,
+                    ticks: m.ticks,
+                    completed: m.completed,
+                });
+            }
+        }
+        const summary = summarizeBatch(rows, 'avgWait');
+        return {
+            rows,
+            summary,
+            csv: formatBatchCsv(rows),
+            text: formatBatchSummaryText(summary, n, baseSeed),
+        };
+    },
+};
 
 resetSimulation({ newScenario: true });

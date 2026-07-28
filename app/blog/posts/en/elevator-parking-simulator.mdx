@@ -41,19 +41,19 @@ This demo isolates parking on a fixed passenger stream. Full operational tree (p
 
 ### Sticky hall-call assignment
 
-Hall calls are assigned with a nearest-car cost **when the passenger appears**, then **stick** — a later idle car that is closer does not steal the call. SCAN delays opposite-direction pickups until the assigned car finishes its current direction.
+Hall calls use nearest-car cost **when the passenger appears**. **Sticky** keeps that car; **Reassign** (Policy → Hall dispatch) rescores waiting calls each tick so nearer IDLE can steal. SCAN still finishes the current direction before opposite-direction boarding.
 
-**Example** (Copy debug, seed 42, Stay, evening, tick 650, IdleFrac 62%):
+**Example** (Copy debug, seed 42, Stay, evening, sticky, tick ~650, IdleFrac 62%):
 
 ```text
-E1: MOVING @ 9 ↑ load 4/8
+E1: MOVING @ 4–9 ↑ load 4/8
   pickup: #76 @16→L1          ← down call on up-bound car
 E3: IDLE @ 20
 E4: IDLE @ 20                 ← closer to floor 16 than E1
 Hall 16: #76→L1 arr=619
 ```
 
-Cost *now* prefers E3/E4, but `#76` was assigned at tick 619 and never reassigned. Parking (where idle cars wait) and **call reassignment** are separate levers — high IdleFrac with long waits often means free cars exist, but sticky dispatch will not hand them the call.
+**Method.** Batch N=100 *before* changing a Policy lever, save under `benchmarks/`, then re-batch. On default evening, sticky→reassign cut Stay max wait (~29→~24) but Mid mean wait got worse — not a free lunch. Full table: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md).
 
 ## Strategy catalog
 
@@ -67,7 +67,7 @@ There is **no single best parking policy**. Rankings depend on traffic — the s
 | Spread | Even homes along the shaft | Down-peak / egress |
 | Demand | Recent call heat | Adaptive heuristic |
 
-Research directions (future code): **hall-call reassignment**, arrival-probability parking, MDP lobby-car counts for up-peak, proactive standby scores, and **service zoning** when saturated.
+Research directions (future code): service zoning when saturated, arrival-probability parking, MDP lobby-car counts for up-peak, proactive standby scores.
 
 ## Batch experiment
 

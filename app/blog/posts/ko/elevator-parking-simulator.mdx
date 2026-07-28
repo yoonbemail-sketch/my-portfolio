@@ -41,19 +41,19 @@ summary: '아파트 엘리베이터 파킹 시뮬 — 승객 시나리오를 고
 
 ### Sticky 홀콜 배정
 
-홀콜은 승객이 생긴 **그 순간의** nearest-car cost로 붙고, **한 번 붙으면 고정**입니다. 나중에 더 가까운 IDLE이 있어도 콜을 뺏지 않습니다. SCAN이면 맡은 차가 현재 방향을 끝낸 뒤에야 반대 방향 픽업을 태울 수 있습니다.
+홀콜은 승객이 생긴 **그 순간의** nearest-car cost입니다. **Sticky**는 고정, **Reassign**(Policy → Hall dispatch)은 매 틱 재스코어해 더 가까운 IDLE이 콜을 가져갈 수 있습니다.
 
-**예시** (Copy debug, seed 42, Stay, evening, tick 650, IdleFrac 62%):
+**예시** (Copy debug, seed 42, Stay, evening, sticky, tick ~650, IdleFrac 62%):
 
 ```text
-E1: MOVING @ 9 ↑ load 4/8
+E1: MOVING @ 4–9 ↑ load 4/8
   pickup: #76 @16→L1          ← 상행 차가 하행 콜을 보유
 E3: IDLE @ 20
 E4: IDLE @ 20                 ← 16층까지는 E1보다 가까움
 Hall 16: #76→L1 arr=619
 ```
 
-지금 cost면 E3/E4가 이기지만, `#76`은 tick 619에 E1에 붙었고 재배정되지 않습니다. 파킹과 **콜 재배정**은 다른 레버입니다. IdleFrac가 높은데 대기가 길면 “빈 차는 있는데 sticky dispatch가 안 넘긴다”는 신호입니다.
+**방법.** Policy를 바꾸기 전 Batch N=100을 `benchmarks/`에 남기고, 한 가지만 바꾼 뒤 다시 돌립니다. 기본 evening에서 sticky→reassign은 Stay max wait를 줄였지만 Mid mean wait는 나빠져 “공짜 개선”이 아닙니다. 표: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md).
 
 ## 전략 카탈로그
 
@@ -67,7 +67,7 @@ Hall 16: #76→L1 arr=619
 | Spread | 축 균등 홈 | 하행 피크·출근 |
 | Demand | call heat | 적응 휴리스틱 |
 
-이후 후보: **홀콜 재배정**, arrival-probability parking, up-peak MDP 로비 대수, proactive standby, 포화 시 **서비스 존**.
+이후 후보: 포화 시 **서비스 존**, arrival-probability parking, up-peak MDP 로비 대수, proactive standby.
 
 ## Batch 실험
 
