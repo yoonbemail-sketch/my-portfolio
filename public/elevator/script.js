@@ -768,8 +768,22 @@ function regimeFromIdleFrac(frac) {
     return 'mixed';
 }
 
+const REGIME_LABELS = {
+    'parking-sensitive': 'parking',
+    saturated: 'saturated',
+    mixed: 'mixed',
+};
+
 function formatIdleFracPct(frac) {
     return `${Math.round(frac * 100)}%`;
+}
+
+function formatRegimeLine(frac) {
+    const regime = regimeFromIdleFrac(frac);
+    return {
+        regime,
+        text: `Idle ${formatIdleFracPct(frac)} · ${REGIME_LABELS[regime] || regime}`,
+    };
 }
 
 function snapshotMetrics() {
@@ -796,7 +810,7 @@ function updateDashboard() {
     const regimeEl = document.getElementById('stat-regime');
     if (regimeEl) {
         const regime = regimeFromIdleFrac(m.idleFrac);
-        regimeEl.textContent = regime;
+        regimeEl.textContent = REGIME_LABELS[regime] || regime;
         regimeEl.dataset.regime = regime;
     }
     const ticksEl = document.getElementById('stat-ticks');
@@ -894,7 +908,7 @@ function formatDebugSnapshot() {
         `avgWait: ${m.avgWait ? m.avgWait.toFixed(2) : '0'}`,
         `maxWait: ${m.maxWait}`,
         `emptyTravel: ${m.emptyTravel}`,
-        `idleFrac: ${formatIdleFracPct(m.idleFrac)} (${regimeFromIdleFrac(m.idleFrac)})`,
+        `idleFrac: ${formatIdleFracPct(m.idleFrac)} (${REGIME_LABELS[regimeFromIdleFrac(m.idleFrac)] || regimeFromIdleFrac(m.idleFrac)})`,
         `completed: ${m.completed} / ${targetPassengers}`,
         `waiting: ${waiting.filter(p => p.state === 'WAITING').length}`,
         `scenarioTrips: ${scenario.length} (cursor ${scenarioCursor})`,
@@ -1110,7 +1124,7 @@ function compareStrategies() {
     const bestWait = Math.min(...results.map(r => r.avgWait || Infinity));
     const bestEmpty = Math.min(...results.map(r => r.emptyTravel));
     const meanIdle = mean(results.map(r => r.idleFrac));
-    const compareRegime = regimeFromIdleFrac(meanIdle);
+    const compareRegime = formatRegimeLine(meanIdle);
 
     const tbody = document.querySelector('#compare-table tbody');
     tbody.innerHTML = '';
@@ -1131,8 +1145,8 @@ function compareStrategies() {
     }
     const regimeLine = document.getElementById('compare-regime');
     if (regimeLine) {
-        regimeLine.textContent = `Idle ${formatIdleFracPct(meanIdle)} · ${compareRegime}`;
-        regimeLine.dataset.regime = compareRegime;
+        regimeLine.textContent = compareRegime.text;
+        regimeLine.dataset.regime = compareRegime.regime;
         regimeLine.hidden = false;
     }
     const settingsEl = document.getElementById('compare-settings');
@@ -1208,7 +1222,7 @@ function batchSettingsLine(n, baseSeed) {
     ].join(' · ');
 }
 
-function renderBatchSettings(n, baseSeed, regimeHint) {
+function renderBatchSettings(n, baseSeed, regimeInfo) {
     const el = document.getElementById('batch-settings');
     if (!el) return;
     const chips = [
@@ -1223,8 +1237,13 @@ function renderBatchSettings(n, baseSeed, regimeHint) {
         `arrival ${Math.round(arrivalRate * 100)}%`,
         `target ${targetPassengers}`,
     ];
-    if (regimeHint) chips.push(regimeHint);
-    el.innerHTML = chips.map(c => `<span class="chip">${c}</span>`).join('');
+    const parts = chips.map(c => `<span class="chip">${c}</span>`);
+    if (regimeInfo) {
+        parts.push(
+            `<span class="chip regime-chip" data-regime="${regimeInfo.regime}">${regimeInfo.text}</span>`
+        );
+    }
+    el.innerHTML = parts.join('');
 }
 
 function setBatchProgress(done, total, label) {
@@ -1326,11 +1345,11 @@ function formatBatchCsv(rows) {
 function formatBatchSummaryText(summary, n, baseSeed) {
     const cfg = RANK_METRICS[batchRankMetric] || RANK_METRICS.avgWait;
     const overallIdle = summary[0] ? summary[0].overallIdleFrac : 0;
-    const overallRegime = summary[0] ? summary[0].overallRegime : 'mixed';
+    const regimeLine = formatRegimeLine(overallIdle);
     const lines = [
         'Elevator Parking — batch summary',
         batchSettingsLine(n, baseSeed),
-        `Idle ${formatIdleFracPct(overallIdle)} · ${overallRegime}`,
+        regimeLine.text,
         `objective: minimize ${cfg.label}`,
         '',
         `Ranked by mean ${cfg.label}:`,
@@ -1380,8 +1399,7 @@ function renderBatchSummary(summary) {
         const n = summary[0].n;
         const baseSeed = batchRows.length ? batchRows[0].seed : scenarioSeed;
         const seedCount = batchRows.length / STRATEGIES.length;
-        const regimeHint = `Idle ${formatIdleFracPct(summary[0].overallIdleFrac)} · ${summary[0].overallRegime}`;
-        renderBatchSettings(seedCount || n, baseSeed, regimeHint);
+        renderBatchSettings(seedCount || n, baseSeed, formatRegimeLine(summary[0].overallIdleFrac));
     }
 
     ranked.forEach((s, i) => {

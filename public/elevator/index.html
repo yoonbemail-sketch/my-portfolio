@@ -59,10 +59,10 @@
                 <span class="metric-label">Empty travel (floors)</span>
                 <span class="metric-value" id="stat-empty">0</span>
             </div>
-            <div class="metric metric-idle">
-                <span class="metric-label">IdleFrac</span>
+            <div class="metric metric-idle" title="IdleFrac = IDLE|PARKING car-ticks ÷ (ticks × elevators). Diagnostic only — ranking uses wait.">
+                <span class="metric-label">Idle %</span>
                 <span class="metric-value" id="stat-idle-frac">0%</span>
-                <span class="regime-chip" id="stat-regime" data-regime="mixed">mixed</span>
+                <span class="regime-chip" id="stat-regime" data-regime="mixed" title="≥25% parking-sensitive · &lt;10% saturated · else mixed">mixed</span>
             </div>
             <div class="metric">
                 <span class="metric-label">Ticks</span>
@@ -74,7 +74,7 @@
             <aside class="controls" id="sim-controls">
                 <fieldset class="panel-section">
                     <legend>Policy</legend>
-                    <p class="hint panel-hint">Where idle cars wait (future: zoning).</p>
+                    <p class="hint panel-hint">Where idle cars wait. Zoning can sit here later.</p>
                     <div class="field">
                         <label for="strategy-select">Parking strategy</label>
                         <select id="strategy-select">
@@ -178,7 +178,7 @@
                                     <th>Avg wait</th>
                                     <th>Max wait</th>
                                     <th>Empty</th>
-                                    <th>Idle%</th>
+                                    <th title="IdleFrac — share of car-ticks IDLE or PARKING">Idle %</th>
                                     <th>Ticks</th>
                                     <th>Done</th>
                                 </tr>
@@ -225,7 +225,7 @@
                                     <th class="num">±</th>
                                     <th class="num">Max wait</th>
                                     <th class="num">Empty</th>
-                                    <th class="num">Idle%</th>
+                                    <th class="num" title="IdleFrac — share of car-ticks IDLE or PARKING">Idle %</th>
                                     <th class="num">Ticks</th>
                                     <th class="col-win">Win rate</th>
                                     <th class="num">Miss</th>
