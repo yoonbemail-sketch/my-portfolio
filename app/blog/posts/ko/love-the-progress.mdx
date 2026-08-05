@@ -1,74 +1,68 @@
 ---
 title: 'Love the progress'
 publishedAt: '2026-07-20'
-summary: '진행(progress)을 중심으로 한 제품의 데이터베이스 스키마와 백엔드 로직 설계 역량을 보여주는 프로젝트.'
+summary: '실제 페그보드 습관 트래커를 8비트 스타일 포토 다이어리·퀘스트 트래커로 디지털화 — 스테이지 맵, 사진 핫스팟, LocalStorage MVP.'
 hidden: true
 ---
 
-진행 상태가 어떻게 저장·갱신·제공되는지를 보여주는 제품형 프로젝트입니다. UI 장식보다 스키마 명확성과 백엔드 규칙에 초점을 둡니다.
+일기보다 **플래너/퀘스트 트래커**에 가까운 개인 습관 앱입니다. 실물 페그보드를 **8비트** 웹으로 옮겨, 하루 Main/Side Quest·스테이지 맵·보드 사진 위 핫스팟을 남깁니다.
 
 ## Product intent
 
-스냅샷만이 아니라 시간에 따른 의미 있는 진행을 추적합니다. 데이터 모델은 “무엇이 바뀌었는지”와 “왜 그것이 중요한지”를 쉽게 조회할 수 있어야 합니다.
+보드의 루틴은 유지하되, 진행이 시간에 따라 보이게 합니다. 스테이지 클리어, Side Quest 코인/점수, 자석마다 메모·서브사진을 붙일 수 있는 포토 다이어리.
 
-## Database schema (draft)
+## Tech stack (MVP)
 
-엔티티와 관계를 여기에 정리합니다.
+- **Frontend:** Next.js (React) 또는 가벼운 MVP용 HTML/Vanilla JS
+- **UI:** NES.css (8비트 마리오/커비 톤) + 레이아웃 CSS
+- **Storage:** `localStorage` + 이후 DB 이전이 쉬운 JSON 구조
 
-```text
-users
-  └── goals
-        └── milestones
-              └── progress_events
+## Core features
 
-optional:
-  tags / categories
-  reflections / notes
-  audit_log
+### A. Stage & progress (8-bit map)
+
+**Main Quests** (당일 스테이지 진행 조건):
+
+1. 운동
+2. 데이터 분석 / SQL 공부
+3. Operations Analyst 등 직무 1개 이상 지원
+
+**Side Quests** (보너스 코인/점수): 빨래, 청소, 독서 등.
+
+Main Quest 3개를 모두 완료하면 2D 맵에서 캐릭터가 다음 스테이지로 이동합니다. Side Quest는 점수/코인만 쌓습니다.
+
+### B. Daily photo + hotspot mapping
+
+- 그날 실물 페그보드 사진 업로드
+- 자석/스티커 위치를 클릭해 핫스팟 생성 (`x_percent`, `y_percent`)
+- 이미지(Base64 또는 object URL)와 해당 날짜의 핫스팟 배열을 함께 저장
+
+### C. Photo diary & modal
+
+- 과거 기록 갤러리/캘린더 그리드
+- 날짜 클릭 → 사진 위 absolute 핫스팟 마커
+- 핫스팟 클릭 → 텍스트 메모 및 선택적 서브사진
+
+## Data shape (JSON)
+
+```json
+{
+  "date": "2026-07-28",
+  "mainQuests": { "exercise": true, "study": true, "jobApply": true },
+  "sideQuests": { "laundry": false, "reading": true },
+  "mainPhoto": "data:image/jpeg;base64,...",
+  "hotspots": [
+    {
+      "id": "hs_1",
+      "x_percent": 45.2,
+      "y_percent": 30.5,
+      "note": "SQL 쿼리 최적화 완료",
+      "subPhoto": null
+    }
+  ]
+}
 ```
 
-### Suggested tables
+## Status
 
-| Table | Purpose | Key fields |
-| --- | --- | --- |
-| `users` | Account identity | `id`, `email`, `created_at` |
-| `goals` | Long-running outcomes | `id`, `user_id`, `title`, `status`, `target_date` |
-| `milestones` | Checkpoints on a goal | `id`, `goal_id`, `title`, `sequence`, `completed_at` |
-| `progress_events` | Append-only activity | `id`, `goal_id`, `milestone_id?`, `kind`, `value`, `occurred_at` |
-
-명시할 제약:
-
-- Progress events는 **append-only** (수정은 silent edit가 아니라 compensating event)
-- Milestone 완료는 파생값이거나, 백엔드에 명확한 규칙으로 명시적 설정
-- Foreign key와 cascading 규칙 문서화 (restrict vs cascade)
-
-## Backend logic
-
-API가 강제하는 도메인 규칙:
-
-1. **Create goal** — ownership 검증; 기본 status; 선택적 첫 milestone
-2. **Record progress** — goal status 위반 이벤트 거부 (예: archived goals)
-3. **Complete milestone** — idempotent 완료; 동일 트랜잭션에서 progress event 발행
-4. **Read progress timeline** — `occurred_at` 정렬; goal / kind 필터 지원
-
-트랜잭션 경계 예시:
-
-```text
-BEGIN
-  insert progress_event
-  update milestone.completed_at (if applicable)
-  recompute goal status (if all milestones done)
-COMMIT
-```
-
-## Trade-offs
-
-- Append-only 이벤트는 저장 비용이 들지만 감사와 “love the progress” 스토리텔링이 단순해짐
-- Derived status vs stored status: 단일 source of truth를 정하고 문서화
-- 사용자가 포기한 goal에 대한 soft delete vs hard delete
-
-## Next steps (draft)
-
-- [ ] ERD 또는 migration 스니펫
-- [ ] API route 목록 (REST/RPC)과 auth boundary
-- [ ] 주간 progress summary용 샘플 쿼리
+히든 초안/스펙 — 공개 프로젝트 목록에는 아직 올리지 않습니다.
