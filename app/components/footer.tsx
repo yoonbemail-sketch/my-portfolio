@@ -28,6 +28,15 @@ export default function Footer({ locale }: { locale: Locale }) {
         <li>
           <a
             className="flex items-center hover:text-neutral-900 dark:hover:text-neutral-100"
+            href="mailto:yoonbemail@gmail.com"
+          >
+            <ArrowIcon />
+            <p className="ml-2 h-7">email</p>
+          </a>
+        </li>
+        <li>
+          <a
+            className="flex items-center hover:text-neutral-900 dark:hover:text-neutral-100"
             rel="noopener noreferrer"
             target="_blank"
             href="https://www.linkedin.com/in/yoondata/"
