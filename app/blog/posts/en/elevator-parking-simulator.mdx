@@ -1,12 +1,55 @@
 ---
 title: 'Elevator Parking Simulator'
 publishedAt: '2026-07-27'
-summary: 'Apartment elevator parking simulator with fixed passenger scenarios — compare Stay/Lobby/Mid/Spread/Demand on the same trip stream.'
+summary: 'Apartment elevator parking — fixed passenger scenarios, regime Batch evidence, and clear limits of a synthetic ops lab.'
 ---
 
-Where should idle elevators wait in an **apartment**? This tick-based simulator holds the passenger scenario fixed (seeded arrivals), then compares parking strategies so only elevator policy changes.
+## Operational question
 
-[GitHub](https://github.com/yoonbemail-sketch/elevator) · [Full demo](/elevator/index.html)
+Where should idle elevators wait in an **apartment** bank? Parking placement is a policy choice; rankings depend on traffic regime.
+
+[GitHub](https://github.com/yoonbemail-sketch/elevator) · [Full demo](/elevator/index.html) · [Insights](/elevator/INSIGHTS.md)
+
+## Policy options
+
+| Strategy | Idle cars go to… |
+| --- | --- |
+| Stay | Last stop |
+| Lobby | Floor 1 |
+| Mid | Mid-building |
+| Spread | Even homes along the shaft |
+| Demand | Recent call-heat floors |
+
+## Experiment design
+
+1. Traffic knobs + **scenario seed** define one passenger stream
+2. **Replay** / **Compare all** hold that stream fixed so only parking policy changes
+3. **Batch N=100** (seeds 42…141) ranks strategies with sticky hall dispatch
+4. Change one Policy knob; re-run Batch before claiming a win
+
+## Metrics
+
+Avg / max wait (ticks), empty travel (floors), **IdleFrac** (parking-sensitive / mixed / saturated), ticks, completed. Rank-by picks the objective — there is no single score.
+
+## Results
+
+Evening default vs morning vs saturated high-arrival ([REGIME](/elevator/benchmarks/REGIME.md)):
+
+| Regime | IdleFrac | 1st by avgWait | Stay−best gap |
+| --- | ---: | --- | ---: |
+| Evening (arr 15%, target 80) | 54% | **Lobby** 1.60 | 4.63 |
+| Morning (arr 15%, target 80) | 50% | **Spread** 4.36 | 4.16 |
+| High arrival (arr 90%, target 200) | **5%** | Mid ≈ pack ~34–35 | **0.90** |
+
+Evening sticky vs reassign A/B: Stay max wait improves under reassign; Mid mean wait **worsens** (4.17→5.02) — myopic idle steal. Table: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md).
+
+## Recommendation
+
+Pick parking by regime (Lobby for evening ingress wait; Spread for morning egress). When IdleFrac is saturated, stop tuning parking — next lever is **zoning** (documented, not coded). Do not ship a “global best” policy from one Replay.
+
+## Limitations
+
+Synthetic lab: Bernoulli arrivals, tick time, distance+load hall cost (not group ETA), **no real-building calibration**. Use for lever separation and fair A/B — not as a vendor-controller replacement study. Batch winRate can exceed 100% on ties.
 
 ## Demo
 
@@ -16,31 +59,16 @@ Where should idle elevators wait in an **apartment**? This tick-based simulator 
   title="Elevator Parking Simulator — fixed scenario compare"
 />
 
-## Fair comparison
-
-1. Traffic inputs + **scenario seed** define one passenger stream
-2. **Replay** restarts the same stream
-3. **Compare all** runs every parking strategy headlessly in the browser on that stream
-4. Change seed / New only when you want a different world
-
-## Question
-
-**Parking** means where to send a free car while it waits. With identical arrivals, lobby parking vs stay/spread differences show up cleanly in avg wait and empty travel.
-
 ## Takeaways
 
-1. **No universal best parking policy** — evening favors Lobby/Demand on wait; Stay is cheap on empty travel; morning often wants shaft coverage. Use Batch + Rank-by for *this* regime.
-2. **Parking needs idle time** — **IdleFrac** diagnoses parking-sensitive vs saturated; when saturated, zoning beats smarter parking.
-3. **Parking ≠ hall dispatch** — sticky can leave IDLE cars unused (`#76` on E1 while E3/E4 sit at 20); full reassign is myopic (Mid mean wait *worsened* on N=100).
+1. **No universal best parking policy** — evening Lobby, morning Spread; gaps collapse when saturated.
+2. **Parking needs idle time** — IdleFrac diagnoses parking-sensitive vs saturated.
+3. **Parking ≠ hall dispatch** — sticky orphans vs reassign thrash (Mid worse on N=100).
 4. **Batch N=100 before/after** one Policy change. Scope frozen — no further dispatch variants.
 
-Full tree + A/B table: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md) · [한국어](/elevator/INSIGHTS.ko.md).
+Full tree + interview Q&A: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md) · [한국어](/elevator/INSIGHTS.ko.md).
 
-## Insight: when parking matters
-
-Parking helps when cars are often **idle**. IdleFrac ≥25% → parking-sensitive; &lt;10% → saturated. Same seed, raise arrival → Compare-all gaps and IdleFrac often fall.
-
-### Sticky vs reassign
+## Insight: sticky vs reassign
 
 **Sticky** keeps the first car; **Reassign** rescores each tick.
 
@@ -50,74 +78,17 @@ E3: IDLE @ 20
 E4: IDLE @ 20
 ```
 
-Evening Batch N=100: Stay max wait ~29→24 under reassign; Mid mean wait 4.17→5.02 — empty cars steal work from productive up-trips.
-
-## Strategy catalog
-
-There is **no single best parking policy**. Rankings depend on traffic — the same way airplane boarding methods (WilMA, back-to-front, random) trade off under different constraints.
-
-| Strategy | Idle placement | Typical fit |
-| --- | --- | --- |
-| Stay | Last floor | Reactive baseline |
-| Lobby | Floor 1 | Up-peak / ingress |
-| Mid | Mid-building | Compromise |
-| Spread | Even homes along the shaft | Down-peak / egress |
-| Demand | Recent call heat | Adaptive heuristic |
-
-Research directions (deferred): service zoning when saturated, arrival-probability parking, MDP lobby counts — only if the portfolio story needs them.
-
-## Batch experiment
-
-In the demo, **Batch N** (default 100) runs seeds `base … base+N−1` with the current traffic knobs, every parking strategy headless, then shows mean wait / empty travel / win-rate and a downloadable CSV. Same base seed → deterministic repeat. Use it to see which baseline wins *for this regime*, not “the” global optimum.
-
-## Building view
-
-`Out | Floors | Elevators | Hall` — alighted passengers on the left, waiting hall calls on the right. Hover dots or cars for trip / panel details. Cars use collective **SCAN** boarding (finish one direction before reversing).
-
 ## Traffic model (apartment default)
 
 Passenger OD is generated once from the seed + traffic knobs, then reused for Replay / Compare all.
 
-### Traffic period
-
-Controls **origin mix** (where people appear):
-
 | Period | Origin mix (approx.) | Story |
 | --- | --- | --- |
-| Morning egress | ~90% upper, ~10% lobby | Leaving the building |
+| Morning egress | ~90% upper, ~10% lobby | Leaving |
 | Evening ingress | ~90% lobby, ~10% upper | Coming home |
-| Midday / off-peak | ~45% lobby, ~55% upper | Mixed daytime |
+| Midday / off-peak | ~45% lobby, ~55% upper | Mixed |
 
-Destinations still follow apartment rules below.
-
-### Arrival rate
-
-Per-tick probability that **one** passenger is created (Bernoulli, at most one per tick). Default **15%** ≈ an arrival every ~6.7 ticks. Discrete stand-in for Poisson arrivals — denser rate means more concurrent hall calls.
-
-### Interfloor trips
-
-If a trip starts on an upper floor, chance the destination is **another upper floor** instead of the lobby (default **10%**). Lobby starts always go upstairs. Low values ≈ pure up/down to lobby; higher values add mid-building stops.
-
-Office any-floor OD is deferred.
-
-## Controls
-
-| Control | Role |
-| --- | --- |
-| Parking strategy | Stay / Lobby / Mid / Spread / Demand |
-| Scenario seed | Fixed passenger stream |
-| Traffic period | Origin mix (morning / evening / midday) |
-| Arrival rate | Per-tick Bernoulli arrival probability |
-| Interfloor % | Upper→upper chance instead of lobby |
-| Door dwell | Stop time at each floor |
-| Building knobs | Floors, cars, capacity, target passengers |
-
-## Metrics
-
-- **Avg / Max wait (ticks)** — hall call to board
-- **Empty travel (floors)** — floors moved empty (parking cost)
-- **IdleFrac** — share of car-ticks spent IDLE or PARKING; regime chip (parking-sensitive / mixed / saturated)
-- **Ticks / Completed** — makespan and throughput
+Arrival rate = per-tick Bernoulli (default 15%). Interfloor % = upper→upper chance (default 10%).
 
 ## Tech stack
 
