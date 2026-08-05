@@ -13,6 +13,28 @@ const STRATEGY_LABELS = {
     demand: 'Demand',
 };
 
+/** Environment presets matching benchmarks/REGIME.md Batch evidence */
+const REGIME_PRESETS = {
+    evening: {
+        peakMode: 'evening',
+        arrivalRate: 0.15,
+        targetPassengers: 80,
+        interfloorRate: 0.10,
+    },
+    morning: {
+        peakMode: 'morning',
+        arrivalRate: 0.15,
+        targetPassengers: 80,
+        interfloorRate: 0.10,
+    },
+    higharrival: {
+        peakMode: 'evening',
+        arrivalRate: 0.90,
+        targetPassengers: 200,
+        interfloorRate: 0.10,
+    },
+};
+
 let floors = 20;
 let elevatorCount = 4;
 let capacity = 8;
@@ -786,12 +808,87 @@ function formatIdleFracPct(frac) {
     return `${Math.round(frac * 100)}%`;
 }
 
-function formatRegimeLine(frac) {
+function formatRegimeLine(frac, stayBestGap = null) {
     const regime = regimeFromIdleFrac(frac);
-    return {
-        regime,
-        text: `Idle ${formatIdleFracPct(frac)} · ${REGIME_LABELS[regime] || regime}`,
-    };
+    let text = `Idle ${formatIdleFracPct(frac)} · ${REGIME_LABELS[regime] || regime}`;
+    if (stayBestGap != null && Number.isFinite(stayBestGap)) {
+        text += ` · Stay−best gap ${stayBestGap.toFixed(2)}`;
+    }
+    return { regime, text };
+}
+
+function stayBestGapFromStrategies(rows, waitKey) {
+    if (!rows || !rows.length) return null;
+    const stay = rows.find(r => r.strategy === 'stay');
+    if (!stay || stay[waitKey] == null) return null;
+    const waits = rows.map(r => r[waitKey]).filter(v => Number.isFinite(v));
+    if (!waits.length) return null;
+    return stay[waitKey] - Math.min(...waits);
+}
+
+function detectRegimePreset() {
+    const arr = Math.round(arrivalRate * 100);
+    const floorPct = Math.round(interfloorRate * 100);
+    for (const [id, p] of Object.entries(REGIME_PRESETS)) {
+        if (
+            peakMode === p.peakMode &&
+            arr === Math.round(p.arrivalRate * 100) &&
+            targetPassengers === p.targetPassengers &&
+            floorPct === Math.round(p.interfloorRate * 100)
+        ) {
+            return id;
+        }
+    }
+    return null;
+}
+
+function syncControlLabels() {
+    const pairs = [
+        ['floors-range', 'floors-val', v => v],
+        ['elevators-range', 'elevators-val', v => v],
+        ['capacity-range', 'capacity-val', v => v],
+        ['arrival-range', 'arrival-val', v => `${v}%`],
+        ['interfloor-range', 'interfloor-val', v => `${v}%`],
+        ['dwell-range', 'dwell-val', v => v],
+        ['target-range', 'target-val', v => v],
+        ['sim-speed', 'sim-speed-val', v => `${v} TPS`],
+    ];
+    for (const [id, valId, fmt] of pairs) {
+        const el = document.getElementById(id);
+        const val = document.getElementById(valId);
+        if (el && val) val.textContent = fmt(el.value);
+    }
+}
+
+function updateRegimePresetButtons() {
+    const active = detectRegimePreset();
+    document.querySelectorAll('.regime-preset').forEach(btn => {
+        btn.classList.toggle('is-active', btn.dataset.preset === active);
+    });
+}
+
+function applyRegimePreset(id, { rebuild = true } = {}) {
+    const preset = REGIME_PRESETS[id];
+    if (!preset) return;
+    stopSim();
+    peakMode = preset.peakMode;
+    arrivalRate = preset.arrivalRate;
+    targetPassengers = preset.targetPassengers;
+    interfloorRate = preset.interfloorRate;
+    const peakEl = document.getElementById('peak-select');
+    const arrEl = document.getElementById('arrival-range');
+    const tgtEl = document.getElementById('target-range');
+    const interEl = document.getElementById('interfloor-range');
+    if (peakEl) peakEl.value = peakMode;
+    if (arrEl) arrEl.value = String(Math.round(arrivalRate * 100));
+    if (tgtEl) tgtEl.value = String(targetPassengers);
+    if (interEl) interEl.value = String(Math.round(interfloorRate * 100));
+    syncControlLabels();
+    updateRegimePresetButtons();
+    if (rebuild) {
+        scenarioKey = '';
+        resetSimulation({ newScenario: true });
+    }
 }
 
 function snapshotMetrics() {
@@ -1136,7 +1233,10 @@ function compareStrategies() {
     const bestWait = Math.min(...results.map(r => r.avgWait || Infinity));
     const bestEmpty = Math.min(...results.map(r => r.emptyTravel));
     const meanIdle = mean(results.map(r => r.idleFrac));
-    const compareRegime = formatRegimeLine(meanIdle);
+    const compareRegime = formatRegimeLine(
+        meanIdle,
+        stayBestGapFromStrategies(results, 'avgWait')
+    );
 
     const tbody = document.querySelector('#compare-table tbody');
     tbody.innerHTML = '';
@@ -1359,7 +1459,10 @@ function formatBatchCsv(rows) {
 function formatBatchSummaryText(summary, n, baseSeed) {
     const cfg = RANK_METRICS[batchRankMetric] || RANK_METRICS.avgWait;
     const overallIdle = summary[0] ? summary[0].overallIdleFrac : 0;
-    const regimeLine = formatRegimeLine(overallIdle);
+    const regimeLine = formatRegimeLine(
+        overallIdle,
+        stayBestGapFromStrategies(summary, 'meanWait')
+    );
     const lines = [
         'Elevator Parking — batch summary',
         batchSettingsLine(n, baseSeed),
@@ -1413,7 +1516,14 @@ function renderBatchSummary(summary) {
         const n = summary[0].n;
         const baseSeed = batchRows.length ? batchRows[0].seed : scenarioSeed;
         const seedCount = batchRows.length / STRATEGIES.length;
-        renderBatchSettings(seedCount || n, baseSeed, formatRegimeLine(summary[0].overallIdleFrac));
+        renderBatchSettings(
+            seedCount || n,
+            baseSeed,
+            formatRegimeLine(
+                summary[0].overallIdleFrac,
+                stayBestGapFromStrategies(summary, 'meanWait')
+            )
+        );
     }
 
     ranked.forEach((s, i) => {
@@ -1693,6 +1803,21 @@ document.getElementById('btn-new-scenario').addEventListener('click', () => {
     scenarioSeed = next;
     resetSimulation({ newScenario: true });
 });
+document.getElementById('btn-path-compare')?.addEventListener('click', () => {
+    document.getElementById('btn-compare')?.click();
+});
+document.getElementById('btn-path-batch')?.addEventListener('click', () => {
+    const nInput = document.getElementById('batch-n');
+    if (nInput) nInput.value = '100';
+    document.getElementById('btn-batch')?.click();
+});
+
+document.querySelectorAll('.regime-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+        applyRegimePreset(btn.dataset.preset);
+    });
+});
+
 document.getElementById('btn-compare').addEventListener('click', compareStrategies);
 document.getElementById('btn-compare-close').addEventListener('click', () => {
     document.getElementById('compare-panel').hidden = true;
@@ -1736,6 +1861,7 @@ document.getElementById('sim-speed').addEventListener('input', () => {
     document.getElementById(id).addEventListener('change', () => {
         if (!isRunning) {
             readControls();
+            updateRegimePresetButtons();
             // elevators-only change shouldn't rebuild passenger OD — but floors/arrival/peak/interfloor/target should
             const trafficChanged = id !== 'elevators-range';
             if (trafficChanged) scenarioKey = '';
@@ -1868,3 +1994,4 @@ globalThis.ElevatorSim = {
 };
 
 resetSimulation({ newScenario: true });
+updateRegimePresetButtons();
