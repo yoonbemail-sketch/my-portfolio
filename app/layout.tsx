@@ -1,13 +1,26 @@
 import './global.css'
 import type { Metadata } from 'next'
-import { GeistSans } from 'geist/font/sans'
-import { GeistMono } from 'geist/font/mono'
+import { IBM_Plex_Mono, IBM_Plex_Sans_KR } from 'next/font/google'
 import { Navbar } from './components/nav'
 import { Analytics } from '@vercel/analytics/react'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import Footer from './components/footer'
 import { baseUrl } from './sitemap'
 import { getLocale } from './i18n/get-locale'
+
+const ibmPlexSansKr = IBM_Plex_Sans_KR({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-ibm-plex-sans-kr',
+  display: 'swap',
+})
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500'],
+  variable: '--font-ibm-plex-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
@@ -55,11 +68,16 @@ export default async function RootLayout({
       lang={locale}
       className={cx(
         'text-neutral-900 bg-neutral-50 dark:text-neutral-100 dark:bg-neutral-950',
-        GeistSans.variable,
-        GeistMono.variable
+        ibmPlexSansKr.variable,
+        ibmPlexMono.variable
       )}
     >
-      <body className="antialiased max-w-2xl mx-4 mt-8 lg:mx-auto">
+      <body
+        className={cx(
+          ibmPlexSansKr.className,
+          'antialiased max-w-2xl mx-4 mt-8 lg:mx-auto'
+        )}
+      >
         <main className="flex-auto min-w-0 mt-6 flex flex-col px-2 md:px-0">
           <Navbar locale={locale} />
           {children}
