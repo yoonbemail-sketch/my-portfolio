@@ -86,8 +86,29 @@ function DemoEmbed({
       : `${href.replace(/\/?$/, '/')}index.html`
     : undefined
 
+  const isElevator = /\/elevator(\/|\.html|\?|$)/.test(normalized)
+
   return (
-    <figure className="my-8 w-full">
+    <figure
+      className={
+        isElevator
+          ? 'demo-embed-breakout my-8 w-full'
+          : 'my-8 w-full'
+      }
+    >
+      {fullHref ? (
+        <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">{title}</p>
+          <a
+            href={fullHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-neutral-900 underline underline-offset-2 decoration-neutral-400 hover:decoration-neutral-700 dark:text-neutral-100 dark:decoration-neutral-600 dark:hover:decoration-neutral-300"
+          >
+            Open full screen
+          </a>
+        </div>
+      ) : null}
       <div className="w-full overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-950">
         <iframe
           src={embedSrc}
@@ -97,19 +118,11 @@ function DemoEmbed({
           loading="lazy"
         />
       </div>
-      <figcaption className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm text-neutral-600 dark:text-neutral-400">
-        <span>{title}</span>
-        {fullHref ? (
-          <a
-            href={fullHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-2 decoration-neutral-400 dark:decoration-neutral-600"
-          >
-            Open full screen
-          </a>
-        ) : null}
-      </figcaption>
+      {!fullHref ? (
+        <figcaption className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+          {title}
+        </figcaption>
+      ) : null}
     </figure>
   )
 }
@@ -185,7 +198,7 @@ function VideoEmbed({
             className="flex items-center justify-center px-6 text-center text-sm text-neutral-500 dark:text-neutral-400"
             style={{ aspectRatio: '16 / 9', minHeight: '360px' }}
           >
-            Demo video coming soon — paste a YouTube, Loom, or Vimeo URL.
+            Demo video coming soon.
           </div>
         )}
       </div>

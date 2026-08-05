@@ -135,3 +135,20 @@ DIVIDE (
 ## Results
 
 Built a trade collector that can resume and update by size, exported a sales fact, and connected it to a Power BI report for premium, price, and signals — embedded above.
+
+## Decision use
+
+The dashboard is for **which model×size to watch, avoid, or revisit** — not a buy button.
+
+- **Monitor:** high volume + elevated premium with a clear size split (e.g. Jordan concentration and size heatmap)
+- **Avoid / wait:** thin trade history or premium that only looks good on a short window (Signals + period what-if)
+- **Revisit:** weekend vs weekday premium gaps or delivery-type shifts that change expected net
+
+Sample scale behind those views: ~**3M** trades, ~**912bn** KRW sales, ~**59%** average premium — useful for relative ranking, not a guarantee on the next trade.
+
+## Limitations
+
+- Source collector stays private; the public artifact is the Publish-to-web report (fully open, no auth)
+- Coverage and freshness depend on which products were queued and when the last incremental run finished
+- Premium and Bollinger-style signals are descriptive on historical trades — not a calibrated pricing or inventory model
+- Publish-to-web is unsuitable for sensitive data; this demo uses an analysis model intended for portfolio viewing

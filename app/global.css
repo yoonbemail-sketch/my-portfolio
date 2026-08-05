@@ -198,3 +198,20 @@ input[type='email'] {
 .title {
   text-wrap: balance;
 }
+
+/* Let the elevator demo breathe past the narrow prose column */
+.demo-embed-breakout {
+  width: min(100vw - 2rem, 72rem);
+  max-width: min(100vw - 2rem, 72rem);
+  margin-left: calc(50% - min(50vw - 1rem, 36rem));
+  margin-right: calc(50% - min(50vw - 1rem, 36rem));
+}
+
+@media (max-width: 720px) {
+  .demo-embed-breakout {
+    width: 100%;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}

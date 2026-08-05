@@ -25,6 +25,9 @@ type Dictionary = {
     description: string
   }
   footer: {
+    email: string
+    linkedin: string
+    rss: string
     copyright: string
   }
   notFound: {
@@ -54,7 +57,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       intro:
         'Mathematical Optimization(Operations Research)을 전공하고, PL-300과 LSSGB를 보유한 Operations Analyst입니다. 운영 데이터를 구조화하고, 의사결정을 모델로 정리하며, 실제로 쓰이는 리포팅을 만드는 일에 집중합니다.',
       projectsLead:
-        '물류·품질·재고 현장에서 쌓은 운영 경험과, 분석·자동화 프로젝트를 아래에 정리합니다.',
+        '아래에 세 축을 정리합니다. Elevator는 OR식 의사결정 실험, Kream은 운영 데이터→Power BI 리포팅, Resume Aligner는 사람 검수 하의 자동화입니다.',
       experienceHeading: '경력',
       projectsHeading: '프로젝트',
       certificationsHeading: '자격증',
@@ -66,6 +69,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
       description: '대시보드, 스키마, 프로세스 노트를 담은 케이스 라이트업입니다.',
     },
     footer: {
+      email: '이메일',
+      linkedin: 'LinkedIn',
+      rss: 'RSS',
       copyright: 'Yoon Lee · Operations Analyst',
     },
     notFound: {
@@ -93,7 +99,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
       intro:
         'I am an Operations Analyst with a background in Mathematical Optimization (Operations Research), holding PL-300 and LSSGB credentials. I focus on structuring operational data, modeling decisions, and shipping reporting people actually use.',
       projectsLead:
-        'Below is a selection of operations experience from logistics, quality, and inventory work, plus analytics and automation projects.',
+        'Three proof points below: Elevator for OR-style decision experiments, Kream for ops data → Power BI reporting, and Resume Aligner for automation under human review.',
       experienceHeading: 'Experience',
       projectsHeading: 'Projects',
       certificationsHeading: 'Certifications',
@@ -106,6 +112,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
         'Case write-ups with room for dashboards, schemas, and process notes.',
     },
     footer: {
+      email: 'email',
+      linkedin: 'linkedin',
+      rss: 'rss',
       copyright: 'Yoon Lee · Operations Analyst',
     },
     notFound: {

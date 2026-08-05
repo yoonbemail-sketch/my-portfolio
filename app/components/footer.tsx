@@ -31,7 +31,7 @@ export default function Footer({ locale }: { locale: Locale }) {
             href="mailto:yoonbemail@gmail.com"
           >
             <ArrowIcon />
-            <p className="ml-2 h-7">email</p>
+            <p className="ml-2 h-7">{t.footer.email}</p>
           </a>
         </li>
         <li>
@@ -42,7 +42,7 @@ export default function Footer({ locale }: { locale: Locale }) {
             href="https://www.linkedin.com/in/yoondata/"
           >
             <ArrowIcon />
-            <p className="ml-2 h-7">linkedin</p>
+            <p className="ml-2 h-7">{t.footer.linkedin}</p>
           </a>
         </li>
         <li>
@@ -51,7 +51,7 @@ export default function Footer({ locale }: { locale: Locale }) {
             href="/rss"
           >
             <ArrowIcon />
-            <p className="ml-2 h-7">rss</p>
+            <p className="ml-2 h-7">{t.footer.rss}</p>
           </a>
         </li>
       </ul>

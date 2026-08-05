@@ -4,24 +4,24 @@ publishedAt: '2026-07-10'
 summary: 'Local Analyze → Apply → Autofill pipeline that matches resume versions to job tabs and fills ATS forms under human review.'
 ---
 
-A local, human-in-the-loop job application assistant. It attaches to a user-selected Chrome tab (no pasted job URLs), scores tailored resume versions against the JD, then autofills ATS forms from a private resume hub — never submitting for you.
+## Operational question
+
+How do you speed up repetitive ATS applications without unsupervised autofill guessing — and without pasting job URLs into a black-box tool?
+
+A local, human-in-the-loop assistant. It attaches to a user-selected Chrome tab, scores tailored resume versions against the JD, then autofills forms from a private resume hub — never submitting for you.
 
 [GitHub](https://github.com/yoonbemail-sketch/semantic-resume-aligner)
 
 ## Demo
 
-Replace the `src` below with your YouTube, Loom, Vimeo, or `/public` video URL.
-
 <VideoEmbed
-  src="REPLACE_WITH_DEMO_VIDEO_URL"
+  src=""
   title="Semantic Resume Aligner — Analyze → Apply → Autofill"
 />
 
-## Problem
+Short walkthrough video coming soon. Until then, the pipeline and constraints below are the hiring artifact.
 
-Applications repeat the same profile data across portals with different schemas. Manual filling is slow; fully unsupervised autofill risks incorrect or overconfident submissions. Opaque “match scores” from platforms also hide why a resume fits or fails.
-
-## Pipeline
+## Method
 
 ```text
 Active Job Tab ──> JD Extractor ──> Semantic Matcher ──> Structured Gap Analysis
@@ -33,20 +33,29 @@ Active Job Tab ──> JD Extractor ──> Semantic Matcher ──> Structured 
 Active ATS Tab ──> ATS Detection ──> Selector Strategy ──> Reviewed Form Fill
 ```
 
-Flow in the Streamlit UI: **Analyze → Apply → Autofill**. Matching gates resume recommendations on applyability first. Autofill uses soft ATS detection plus a shared field catalog across hosts such as Workday, Greenhouse, SuccessFactors, Dayforce, Phenom, and Oracle CX.
+Streamlit UI: **Analyze → Apply → Autofill**. Matching gates on applyability first. Autofill uses soft ATS detection plus a shared field catalog (Workday, Greenhouse, SuccessFactors, Dayforce, Phenom, Oracle CX, and similar).
 
-## Zero-URL contract
+### Zero-URL contract
 
-Playwright attaches over CDP to a user-managed Chrome instance and operates only on an explicitly selected tab. The UI never accepts a pasted job URL or JD text — the applicant stays in control of navigation, auth, and final submit.
+Playwright attaches over CDP to a user-managed Chrome instance and operates only on an explicitly selected tab. The UI never accepts a pasted job URL or JD text — navigation, auth, and final submit stay with the applicant.
 
-## Human-supervised constraints
-
-Non-negotiable gates before any apply step:
+### Human-supervised constraints
 
 1. **No silent submit** — drafts are never posted without explicit approval
 2. **Diff visibility** — reviewer sees mapped fields and unmatched ones for manual entry
 3. **Preserve curated fields** — hub profile values are not overwritten by stale import prose
 4. **Fail closed** — ambiguous ATS pages or mappings stop safely rather than guessing
+
+## Status
+
+Local HITL pipeline is implemented and documented on GitHub. Demo video is next; field-level validation table (ATS × fields filled × failure modes) will ship with that recording.
+
+## Limitations
+
+- Not a fire-and-forget bot — unsupervised submit is intentionally out of scope
+- ATS coverage is partial and DOM-signature based; new portals need catalog work
+- LLM gap labels (`APPLY` / `APPLY_WITH_CAUTION` / `DO_NOT_APPLY` / `NEEDS_REVIEW`) still need a published accuracy sample
+- Private resume hub stays local; this write-up does not expose personal data
 
 ## Tech stack
 
@@ -55,6 +64,6 @@ Python · Streamlit · Playwright (CDP) · Pydantic · BeautifulSoup · pypdf / 
 ## Design notes
 
 - Separate durable applicant data from platform-specific selectors and model reasoning
-- Validate LLM gap analysis with Pydantic (`APPLY` / `APPLY_WITH_CAUTION` / `DO_NOT_APPLY` / `NEEDS_REVIEW`)
+- Validate LLM gap analysis with Pydantic
 - Prefer importer-based refreshes over hardcoding resume prose that goes stale
 - Detect ATS from local DOM signatures, not paid URL classifiers
