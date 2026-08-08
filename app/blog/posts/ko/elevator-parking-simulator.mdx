@@ -1,12 +1,12 @@
 ---
 title: 'Elevator Parking Simulator'
 publishedAt: '2026-07-27'
-summary: '아파트 엘리베이터 파킹 — 고정 시나리오, 레짐별 Batch 결과, 합성 실험의 한계까지 정리.'
+summary: '아파트 엘리베이터 대기 위치 전략을 고정 시나리오와 운영 조건별 Batch 실험으로 비교하고, 합성 실험의 한계까지 정리했습니다.'
 ---
 
 ## Operational question
 
-**아파트** 엘리베이터에서 빈 차는 어디에 대기해야 할까? 파킹 위치는 정책 선택이고, 순위는 트래픽 레짐에 따라 달라집니다.
+**아파트** 엘리베이터에서 빈 차는 어디에 대기해야 할까? 대기 위치(파킹)는 정책 선택이고, 순위는 트래픽 레짐(운영 조건)에 따라 달라집니다.
 
 [GitHub](https://github.com/yoonbemail-sketch/elevator) · [전체 화면 데모](/elevator/index.html) · [인사이트](/elevator/INSIGHTS.ko.md)
 
@@ -29,7 +29,7 @@ summary: '아파트 엘리베이터 파킹 — 고정 시나리오, 레짐별 Ba
 
 ## Metrics
 
-Avg / max wait(ticks), empty travel(floors), **IdleFrac**(parking-sensitive / mixed / saturated), ticks, completed. Rank-by로 목표를 고릅니다 — 단일 점수는 없습니다.
+Avg / max wait(ticks), empty travel(floors), **IdleFrac**(유휴 비중: parking-sensitive / mixed / saturated), ticks, completed. Rank-by로 목표를 고릅니다 — 단일 점수는 없습니다.
 
 ## Results
 
@@ -45,7 +45,7 @@ Evening sticky vs reassign A/B: Stay의 max wait는 reassign에서 개선되지�
 
 ## Recommendation
 
-레짐별로 고릅니다(저녁 귀가 대기 → Lobby, 아침 외출 → Spread). IdleFrac가 saturated면 파킹 튜닝을 멈추고, 다음 레버는 **zoning**(문서만, 미구현)입니다. Replay 한 번으로 “전역 최적”을 내지 않습니다.
+레짐별로 고릅니다(저녁 귀가 대기 → Lobby, 아침 외출 → Spread). IdleFrac가 saturated(포화)면 파킹 튜닝을 멈추고, 다음 레버는 **zoning**(문서만, 미구현)입니다. Replay 한 번으로 “전역 최적”을 내지 않습니다.
 
 ## Limitations
 
@@ -53,7 +53,7 @@ Evening sticky vs reassign A/B: Stay의 max wait는 reassign에서 개선되지�
 
 ## Demo
 
-시뮬에서 **regime preset**(Evening / Morning / High arrival) → Stay → Start 후 **Compare all**, **Batch N=100**을 돌립니다. 임베드가 좁으면 **Open full screen**을 권장합니다.
+시뮬에서 **regime preset**(Evening / Morning / High arrival) → Stay → Start 후 **Compare all**, **Batch N=100**을 실행합니다. 임베드가 좁으면 **Open full screen**을 권장합니다.
 
 <DemoEmbed
   src="/elevator/index.html"
@@ -65,8 +65,8 @@ Evening sticky vs reassign A/B: Stay의 max wait는 reassign에서 개선되지�
 
 1. **만능 파킹은 없다** — evening은 Lobby, morning은 Spread; 포화되면 격차가 거의 사라집니다.
 2. **파킹은 유휴가 있어야 한다** — IdleFrac로 parking-sensitive와 saturated를 구분합니다.
-3. **파킹 ≠ 홀 배정** — sticky는 먼 호출에 묶인 채 유휴 차가 놀 수 있고, reassign은 thrash를 만듭니다(Mid는 N=100에서 악화).
-4. **Policy를 하나 바꿀 때마다 Batch N=100 before/after.** 홀 배정 추가 변형은 이번 범위에서 멈춥니다.
+3. **파킹 ≠ 홀 배정** — sticky는 먼 호출에 묶인 채 유휴 차가 놀 수 있고, reassign은 과도한 재배치를 만듭니다(Mid는 N=100에서 악화).
+4. **Policy를 하나 바꿀 때마다 Batch N=100 before/after.** 홀 배정 추가 변형은 이번 분석 범위에서 여기까지 검증했습니다.
 
 전체 트리·면접 Q: [`/elevator/INSIGHTS.ko.md`](/elevator/INSIGHTS.ko.md) · [EN](/elevator/INSIGHTS.md).
 

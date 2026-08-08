@@ -1,4 +1,4 @@
-# 엘리베이터 파킹 — 인사이트 wrap-up
+# 엘리베이터 대기 위치 — 인사이트 wrap-up
 
 아파트에서 **빈 차를 어디에 둘지**를, **고정 시드 승객 스트림** 위에서 비교하는 포트폴리오 데모입니다.
 목표: 레버를 분리하고 Batch로 측정하며, 홀 배정을 과도하게 튜닝하기 전에 멈춥니다.
@@ -8,7 +8,7 @@ English: **[INSIGHTS.md](INSIGHTS.md)**
 ## Takeaways (먼저 읽기)
 
 1. **만능 최적 파킹은 없다.** Evening ingress → Batch N=100에서 평균 대기는 **Lobby**가 1위, Stay는 공차는 싸지만 느립니다. Morning egress → **Spread**가 1위(축 커버), Lobby는 꼴찌입니다. 순위는 트래픽에 따라 뒤집힙니다 — [`benchmarks/REGIME.md`](benchmarks/REGIME.md).
-2. **파킹은 유휴가 있어야 한다.** **IdleFrac**(IDLE|PARKING car-ticks ÷ ticks×대수)를 씁니다. 높으면 parking-sensitive, 아주 낮으면 saturated → 다음 레버는 더 똑똑한 파킹이 아니라 **zoning**입니다. High-arrival Batch(IdleFrac **5%**): Stay−best 대기 격차 **4.63 → 0.90**.
+2. **파킹은 유휴가 있어야 한다.** **IdleFrac**(IDLE|PARKING car-ticks ÷ ticks×대수, 유휴 비중)를 씁니다. 높으면 parking-sensitive, 아주 낮으면 saturated → 다음 레버는 더 똑똑한 파킹이 아니라 **zoning**입니다. High-arrival Batch(IdleFrac **5%**): Stay−best 대기 격차 **4.63 → 0.90**.
 3. **파킹 ≠ 홀 배정.** Sticky nearest-car는 만차에 먼 호출이 묶인 채 IDLE이 놀 수 있습니다(seed 42, E1이 `#76@16` 보유, E3/E4는 20층 IDLE). **Reassign**은 방치된 호출은 풀지만 근시안이라, Batch N=100에서 Mid 평균 대기가 *나빠졌습니다*(빈 차가 상행 중인 차의 일을 가로챔).
 4. **Policy 설정은 하나만 바꾸고 Batch N=100 before/after.** 산출물은 [`benchmarks/`](benchmarks/). 한 번 Replay로 최적화하지 마세요.
 
@@ -109,7 +109,7 @@ Batch N=100, seeds 42…141, 기본 evening Environment ([COMPARE](benchmarks/CO
 
 Reassign은 Stay의 긴 꼬리(max)에 도움이 되고, Mid는 빈 중간층 차가 상행 차가 en-route로 태울 호출을 가로채 공차가 늘며 손해 봅니다. Cost는 거리·부하·가벼운 방향항이지 그룹 ETA가 아닙니다.
 
-**여기서 멈춤:** idle-steal / 마진 변형은 하지 않습니다.
+**여기서 멈춤:** idle-steal / 마진 변형은 하지 않습니다. 이번 분석에서는 추가 일반화보다 검증 가능한 범위에 집중했습니다.
 
 ## 4. 전략 카탈로그 + Batch
 
@@ -154,10 +154,10 @@ OA / 분석 면접용 짧은 답변 골격.
 
 ---
 
-## 이번 범위에서 멈춤
+## 이번 분석 범위
 
 | In | Out (의도적) |
 | --- | --- |
 | 위 트리 + Batch A/B + 레짐 민감도 + Copy debug | idle-steal 튜닝, zoning 코드, office OD, 에너지, MDP 로비 대수 |
 
-포트폴리오 내러티브에 필요할 때만 이어서 — 로컬 점수 쫓기용은 아닙니다.
+포트폴리오 내러티브에 필요할 때만 이어서 — 로컬 점수 깎기용은 아닙니다.

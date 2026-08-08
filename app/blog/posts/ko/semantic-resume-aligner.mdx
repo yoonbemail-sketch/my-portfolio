@@ -1,12 +1,12 @@
 ---
 title: 'Semantic Resume Aligner'
 publishedAt: '2026-07-10'
-summary: '로컬 Analyze → Apply → Autofill 파이프라인. 선택한 채용 탭에 이력서 버전을 매칭하고, 사람이 검수하는 전제에서 ATS 폼을 채웁니다.'
+summary: '로컬 Analyze → Apply → Autofill 파이프라인. 선택한 채용 탭에 이력서 버전을 매칭하고, 사람 검수 하에 ATS 폼을 채웁니다.'
 ---
 
 ## Operational question
 
-반복적인 ATS 지원을 빠르게 하면서도, 무감독 autofill의 추측 제출과 URL 붙여넣기 블랙박스는 어떻게 피할 수 있을까?
+반복적인 ATS 지원을 빠르게 하면서도, 검수 없는 자동 입력의 추측 제출과 URL 붙여넣기 블랙박스는 어떻게 피할 수 있을까?
 
 로컬 Human-in-the-loop 도우미입니다. 사용자가 선택한 Chrome 탭에 붙고, JD에 맞춰 이력서 버전을 점수화한 뒤 private resume hub로 폼을 채웁니다 — 제출은 절대 대신하지 않습니다.
 
@@ -19,7 +19,7 @@ summary: '로컬 Analyze → Apply → Autofill 파이프라인. 선택한 채�
   title="Semantic Resume Aligner — Analyze → Apply → Autofill"
 />
 
-데모 영상은 곧 올릴 예정입니다. 그전까지는 아래 파이프라인·제약이 채용용 아티팩트입니다.
+데모 영상은 곧 올릴 예정입니다. 그전까지는 아래 파이프라인·제약이 채용용 산출물입니다.
 
 ## Method
 
@@ -33,7 +33,7 @@ Active Job Tab ──> JD Extractor ──> Semantic Matcher ──> Structured 
 Active ATS Tab ──> ATS Detection ──> Selector Strategy ──> Reviewed Form Fill
 ```
 
-Streamlit UI: **Analyze → Apply → Autofill**. 매칭은 먼저 applyability로 게이트합니다. Autofill은 soft ATS 감지와 공유 필드 카탈로그로 Workday, Greenhouse, SuccessFactors, Dayforce, Phenom, Oracle CX 등을 다룹니다.
+Streamlit UI: **Analyze → Apply → Autofill**. 매칭은 먼저 지원 가능성(applyability)으로 걸러냅니다. Autofill은 soft ATS 감지와 공유 필드 카탈로그로 Workday, Greenhouse, SuccessFactors, Dayforce, Phenom, Oracle CX 등을 다룹니다.
 
 ### Zero-URL contract
 
@@ -44,15 +44,15 @@ Playwright가 CDP로 사용자가 관리하는 Chrome에 붙고, 명시적으로
 1. **No silent submit** — 명시적 승인 없이 draft를 게시하지 않음
 2. **Diff visibility** — 매핑된 필드와 수동 입력이 필요한 unmatched 필드를 리뷰어가 확인
 3. **Preserve curated fields** — hub profile 값을 오래된 import 문구로 덮어쓰지 않음
-4. **Fail closed** — 모호한 ATS 페이지·매핑은 추측하지 않고 안전하게 중단
+4. **Fail closed** — 모호한 ATS 페이지·매핑은 추측하지 않고, 불확실하면 자동 입력을 중단
 
 ## Status
 
-로컬 HITL 파이프라인은 구현되어 있고 GitHub에 문서화되어 있습니다. 다음은 데모 영상이며, 그때 ATS × 채움 필드 × 실패 모드 검증 표도 같이 올립니다.
+로컬 HITL 파이프라인은 구현되어 있고 GitHub에 문서화되어 있습니다. 다음은 데모 영상이며, 그때 ATS × 채움 필드 × 실패 모드 검증 표도 함께 공개합니다.
 
 ## Limitations
 
-- 완전 자동 제출 봇이 아님 — unsupervised submit은 의도적으로 제외
+- 완전 자동 제출 봇이 아님 — 검수 없는 자동 제출은 의도적으로 제외
 - ATS 커버리지는 부분적이며 DOM signature 기반; 새 포털은 카탈로그 작업 필요
 - LLM gap 라벨(`APPLY` / `APPLY_WITH_CAUTION` / `DO_NOT_APPLY` / `NEEDS_REVIEW`)의 공개 accuracy 샘플은 아직 없음
 - Private resume hub는 로컬에 둠; 이 글은 개인 데이터를 노출하지 않음
@@ -65,5 +65,5 @@ Python · Streamlit · Playwright (CDP) · Pydantic · BeautifulSoup · pypdf / 
 
 - 오래 쓰는 지원자 데이터와 플랫폼별 selector·모델 추론을 분리
 - LLM gap analysis를 Pydantic으로 검증
-- 금방 낡는 resume 문구 하드코딩보다 importer 기반 refresh를 우선
+- 금방 낡는 resume 문구 하드코딩보다 importer 기반 갱신을 우선
 - 유료 URL classifier 대신 로컬 DOM signature로 ATS 감지
