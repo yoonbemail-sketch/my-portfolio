@@ -1,12 +1,12 @@
 ---
 title: 'Elevator Parking Simulator'
 publishedAt: '2026-07-27'
-summary: '아파트 엘리베이터 파킹 — 고정 시나리오, 레짐 Batch 증거, 합성 운영 랩의 한계까지 정리.'
+summary: '아파트 엘리베이터 파킹 — 고정 시나리오, 레짐별 Batch 결과, 합성 실험의 한계까지 정리.'
 ---
 
 ## Operational question
 
-**아파트** 뱅크에서 유휴 엘리베이터는 어디에 대기해야 할까? 파킹 배치는 정책 선택이고, 순위는 트래픽 레짐에 따라 바뀝니다.
+**아파트** 엘리베이터에서 빈 차는 어디에 대기해야 할까? 파킹 위치는 정책 선택이고, 순위는 트래픽 레짐에 따라 달라집니다.
 
 [GitHub](https://github.com/yoonbemail-sketch/elevator) · [전체 화면 데모](/elevator/index.html) · [인사이트](/elevator/INSIGHTS.ko.md)
 
@@ -17,19 +17,19 @@ summary: '아파트 엘리베이터 파킹 — 고정 시나리오, 레짐 Batch
 | Stay | 마지막 정차층 |
 | Lobby | 1층 |
 | Mid | 중간층 |
-| Spread | 축 균등 홈 |
-| Demand | 최근 call heat |
+| Spread | 축을 따라 균등 배치 |
+| Demand | 최근 호출이 몰린 층 |
 
 ## Experiment design
 
-1. 트래픽 노브 + **scenario seed**로 승객 스트림 하나 생성
-2. **Replay** / **Compare all**로 스트림을 고정하고 파킹 정책만 변경
-3. **Batch N=100** (seeds 42…141), sticky 홀 배정으로 전략 순위
-4. Policy 노브는 하나만 바꾸고 Batch를 다시 돌린 뒤 주장
+1. 트래픽 설정 + **scenario seed**로 승객 스트림을 하나 만듭니다
+2. **Replay** / **Compare all**로 그 스트림을 고정한 채 파킹 정책만 바꿉니다
+3. **Batch N=100**(seeds 42…141), sticky 홀 배정으로 전략 순위를 냅니다
+4. Policy 설정은 하나만 바꾼 뒤 Batch를 다시 돌리고 나서 주장합니다
 
 ## Metrics
 
-Avg / max wait (ticks), empty travel (floors), **IdleFrac** (parking-sensitive / mixed / saturated), ticks, completed. Rank-by로 목표를 고른다 — 단일 점수는 없음.
+Avg / max wait(ticks), empty travel(floors), **IdleFrac**(parking-sensitive / mixed / saturated), ticks, completed. Rank-by로 목표를 고릅니다 — 단일 점수는 없습니다.
 
 ## Results
 
@@ -41,19 +41,19 @@ Evening 기본 vs morning vs 포화 high-arrival ([REGIME](/elevator/benchmarks/
 | Morning (arr 15%, target 80) | 50% | **Spread** 4.36 | 4.16 |
 | High arrival (arr 90%, target 200) | **5%** | Mid ≈ 34–35 동률대 | **0.90** |
 
-Evening sticky vs reassign A/B: Stay max는 reassign에서 개선, Mid 평균 대기는 **악화**(4.17→5.02) — 근시안 idle steal. 표: [`/elevator/INSIGHTS.ko.md`](/elevator/INSIGHTS.ko.md).
+Evening sticky vs reassign A/B: Stay의 max wait는 reassign에서 개선되지만, Mid의 평균 대기는 **악화**(4.17→5.02)합니다 — 가까운 유휴 차가 이미 상행 중인 차의 일을 가로채기 때문입니다. 표: [`/elevator/INSIGHTS.ko.md`](/elevator/INSIGHTS.ko.md).
 
 ## Recommendation
 
-레짐별로 고른다 (evening 대기 → Lobby, morning egress → Spread). IdleFrac가 saturated면 파킹 튜닝을 멈추고 다음 레버는 **zoning**(문서만, 미구현). Replay 한 번으로 “전역 최적”을 내지 않는다.
+레짐별로 고릅니다(저녁 귀가 대기 → Lobby, 아침 외출 → Spread). IdleFrac가 saturated면 파킹 튜닝을 멈추고, 다음 레버는 **zoning**(문서만, 미구현)입니다. Replay 한 번으로 “전역 최적”을 내지 않습니다.
 
 ## Limitations
 
-합성 랩: Bernoulli 도착, tick 시간, 거리·부하 홀 비용(그룹 ETA 아님), **실제 빌딩 캘리브레이션 없음**. 레버 분리·공정 A/B용이지 벤더 컨트롤러 교체 근거가 아니다. Batch winRate는 tie 시 100%를 넘을 수 있다.
+합성 실험입니다. Bernoulli 도착, tick 시간, 거리·부하 기반 홀 비용(그룹 ETA 아님), **실제 빌딩 캘리브레이션 없음**. 레버 분리와 공정한 A/B용이며, 벤더 컨트롤러를 바꾸라는 근거가 아닙니다. Batch winRate는 동점 시 100%를 넘을 수 있습니다.
 
 ## Demo
 
-시뮬에서 **regime preset**(Evening / Morning / High arrival) → Stay → Start 후 **Compare all**, **Batch N=100**. 임베드가 좁으면 **Open full screen**을 권장합니다.
+시뮬에서 **regime preset**(Evening / Morning / High arrival) → Stay → Start 후 **Compare all**, **Batch N=100**을 돌립니다. 임베드가 좁으면 **Open full screen**을 권장합니다.
 
 <DemoEmbed
   src="/elevator/index.html"
@@ -63,16 +63,16 @@ Evening sticky vs reassign A/B: Stay max는 reassign에서 개선, Mid 평균 �
 
 ## Takeaways
 
-1. **만능 파킹은 없다** — evening Lobby, morning Spread; 포화면 격차 붕괴.
-2. **파킹은 유휴가 있어야 한다** — IdleFrac로 parking-sensitive vs saturated.
-3. **파킹 ≠ 홀 배정** — sticky 고아 콜 vs reassign 스래시 (Mid는 N=100에서 악화).
-4. **Policy 하나마다 Batch N=100 before/after.** dispatch 추가 변형은 스코프 동결.
+1. **만능 파킹은 없다** — evening은 Lobby, morning은 Spread; 포화되면 격차가 거의 사라집니다.
+2. **파킹은 유휴가 있어야 한다** — IdleFrac로 parking-sensitive와 saturated를 구분합니다.
+3. **파킹 ≠ 홀 배정** — sticky는 먼 호출에 묶인 채 유휴 차가 놀 수 있고, reassign은 thrash를 만듭니다(Mid는 N=100에서 악화).
+4. **Policy를 하나 바꿀 때마다 Batch N=100 before/after.** 홀 배정 추가 변형은 이번 범위에서 멈춥니다.
 
 전체 트리·면접 Q: [`/elevator/INSIGHTS.ko.md`](/elevator/INSIGHTS.ko.md) · [EN](/elevator/INSIGHTS.md).
 
 ## Insight: sticky vs reassign
 
-**Sticky** 고정 / **Reassign** 매 틱 재스코어.
+**Sticky**는 처음 배정한 차를 유지하고, **Reassign**은 매 틱마다 다시 스코어합니다.
 
 ```text
 E1: MOVING ↑ load 4/8   pickup #76 @16→L1
@@ -82,7 +82,7 @@ E4: IDLE @ 20
 
 ## 트래픽 모델 (아파트 기본)
 
-시드 + 트래픽 노브로 OD를 한 번 만들고 Replay / Compare all에서 재사용.
+시드 + 트래픽 설정으로 OD를 한 번 만들고 Replay / Compare all에서 재사용합니다.
 
 | 시간대 | 출발 분포 (대략) | 이야기 |
 | --- | --- | --- |

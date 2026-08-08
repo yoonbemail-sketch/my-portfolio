@@ -55,9 +55,9 @@ export const dictionaries: Record<Locale, Dictionary> = {
     home: {
       role: 'Operations Analyst · Mathematical Optimization (OR) · PL-300 · LSSGB',
       intro:
-        'Mathematical Optimization(Operations Research)을 전공하고, PL-300과 LSSGB를 보유한 Operations Analyst입니다. 운영 데이터를 구조화하고, 의사결정을 모델로 정리하며, 실제로 쓰이는 리포팅을 만드는 일에 집중합니다.',
+        'Mathematical Optimization(Operations Research) 배경의 Operations Analyst입니다. PL-300과 LSSGB를 보유하며, 운영 데이터를 구조화하고 의사결정을 모델로 정리해 실제로 쓰이는 리포팅을 만듭니다.',
       projectsLead:
-        '아래에 세 축을 정리합니다. Elevator는 OR식 의사결정 실험, Kream은 운영 데이터→Power BI 리포팅, Resume Aligner는 사람 검수 하의 자동화입니다.',
+        '아래 세 가지로 정리합니다. Elevator는 OR 관점의 의사결정 실험, Kream은 운영 데이터에서 Power BI 리포팅까지, Resume Aligner는 사람 검수를 전제로 한 자동화입니다.',
       experienceHeading: '경력',
       projectsHeading: '프로젝트',
       certificationsHeading: '자격증',
@@ -66,7 +66,7 @@ export const dictionaries: Record<Locale, Dictionary> = {
     },
     projects: {
       title: '프로젝트',
-      description: '대시보드, 스키마, 프로세스 노트를 담은 케이스 라이트업입니다.',
+      description: '대시보드·스키마·프로세스 노트를 담은 프로젝트 정리글입니다.',
     },
     footer: {
       email: '이메일',
