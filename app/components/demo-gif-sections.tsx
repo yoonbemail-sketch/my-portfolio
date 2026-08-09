@@ -25,27 +25,28 @@ const COPY: Record<
   en: {
     analyzeTitle: 'Analyze',
     autofillTitle: 'Autofill',
-    placeholderHint: 'GIF coming soon — drop the recording into public/.',
+    placeholderHint: 'Recording pending. Add the GIF under public/.',
     analyzeTabs: [
       {
         label: 'APPLY',
         src: `${DEMO_BASE}/analyze-apply.gif`,
-        caption: 'Clear APPLY with a recommended resume version.',
+        caption: 'APPLY recommendation with a selected resume version.',
       },
       {
         label: 'APPLY WITH CAUTION',
         src: `${DEMO_BASE}/analyze-caution.gif`,
-        caption: 'Worth applying, with preferred gaps still visible.',
+        caption: 'Application remains viable; preferred-requirement gaps are listed.',
       },
       {
         label: 'NEEDS REVIEW',
         src: `${DEMO_BASE}/analyze-needs-review.gif`,
-        caption: 'Mandatory fact unknown — resolve Yes/No in the hub, then re-analyze.',
+        caption:
+          'A mandatory fact is unresolved. Record Yes/No in the hub, then re-run Analyze.',
       },
       {
         label: 'DO NOT APPLY',
         src: `${DEMO_BASE}/analyze-do-not-apply.gif`,
-        caption: 'Hard stop — no resume push when applyability fails.',
+        caption: 'Applyability fails; no resume version is recommended.',
       },
     ],
     autofillTabs: [
@@ -53,45 +54,47 @@ const COPY: Record<
         label: 'Work & education',
         src: `${DEMO_BASE}/autofill-experience.gif`,
         caption:
-          'Experience and education from the hub (Phenom also fills short Role description).',
+          'Work history and education from the hub. On Phenom, Role description is also filled.',
       },
       {
         label: 'Profile basics',
         src: `${DEMO_BASE}/autofill-profile.gif`,
-        caption: 'Contact and work-authorization answers; availability left blank.',
+        caption:
+          'Contact and work-authorization fields. Availability / start date is left blank.',
       },
       {
         label: 'Voluntary info',
         src: `${DEMO_BASE}/autofill-voluntary.gif`,
         caption:
-          'Sex, gender identity, ethnicity, and acknowledgment — Submit stays manual.',
+          'Sex, gender identity, ethnicity, and acknowledgment. Submit remains manual.',
       },
     ],
   },
   ko: {
     analyzeTitle: '분석',
     autofillTitle: '자동 입력',
-    placeholderHint: 'GIF 준비 중 — public/에 녹화본을 넣으세요.',
+    placeholderHint: '녹화본 준비 중. public/에 GIF를 추가하세요.',
     analyzeTabs: [
       {
         label: '지원',
         src: `${DEMO_BASE}/analyze-apply.gif`,
-        caption: 'APPLY와 추천 resume 버전이 바로 보이는 결과.',
+        caption: 'APPLY 판정과 선택된 이력서 버전.',
       },
       {
         label: '주의하며 지원',
         src: `${DEMO_BASE}/analyze-caution.gif`,
-        caption: '지원 가치는 있으나 preferred gap이 남는 경우.',
+        caption: '지원은 가능하나, 우대 요건 공백이 함께 표시됩니다.',
       },
       {
         label: '검토 필요',
         src: `${DEMO_BASE}/analyze-needs-review.gif`,
-        caption: '필수 사실이 불명 — hub에서 Yes/No 후 다시 분석.',
+        caption:
+          '필수 사실이 미확정입니다. hub에 Yes/No를 기록한 뒤 Analyze를 다시 실행합니다.',
       },
       {
         label: '지원하지 않음',
         src: `${DEMO_BASE}/analyze-do-not-apply.gif`,
-        caption: 'Applyability 실패 시 resume 추천 없이 멈춤.',
+        caption: '지원 가능 여부 판정 실패. 이력서 버전을 추천하지 않습니다.',
       },
     ],
     autofillTabs: [
@@ -99,17 +102,19 @@ const COPY: Record<
         label: '경력·학력',
         src: `${DEMO_BASE}/autofill-experience.gif`,
         caption:
-          '경력·학력을 hub에서 채움 (Phenom은 짧은 Role description도 채움).',
+          'hub의 경력·학력을 채웁니다. Phenom에서는 Role description도 채웁니다.',
       },
       {
         label: '기본 정보',
         src: `${DEMO_BASE}/autofill-profile.gif`,
-        caption: '연락처·근무 허가 답변을 채우고 입사 가능일은 비워 둠.',
+        caption:
+          '연락처와 근무 허가 관련 필드를 채웁니다. 입사 가능일/시작일은 비워 둡니다.',
       },
       {
         label: '자발적 정보',
         src: `${DEMO_BASE}/autofill-voluntary.gif`,
-        caption: '성별·Gender Identity·ethnicity·동의 체크 — 제출은 수동.',
+        caption:
+          '성별, Gender Identity, ethnicity, 동의 항목. 제출은 사용자가 수행합니다.',
       },
     ],
   },
