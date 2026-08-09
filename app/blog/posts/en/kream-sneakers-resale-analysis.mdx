@@ -4,96 +4,14 @@ publishedAt: '2026-01-28'
 summary: 'Trade-history collection → sales fact → Power BI for premium, seasonality, and signals.'
 ---
 
-An Operations Analyst project on Kream sneakers resale: collect trade history by size, clean it into a sales fact, and analyze premiums and signals in Power BI.
+## Demo
 
-Source code stays private. The live dashboard below is shared with Publish to web.
-
-## Problem
-
-Resale decisions need how often a model×size trades, at what price, and at what premium to retail. A few recent rows on a product page are not enough for seasonality or size gaps. Histories are long and easy to interrupt, so a one-shot scrape is not enough.
-
-## How collection works
-
-Playwright attaches to an already-logged-in Chrome and runs each product like this:
-
-| Step | What happens |
-| --- | --- |
-| 1 | Start from a product page or the queue |
-| 2 | Identify the model and expected volume per size |
-| 3 | Collect only sizes that are still incomplete |
-| 4 | Save size, price, date, delivery type to CSV |
-| 5 | Merge by model → sales fact → Power BI |
-
-| Run type | Description |
-| --- | --- |
-| Single | The product open in the browser |
-| Batch | Walk a queue of products unattended |
-| Queue adder | Pull model / URL from the current tab into the list |
-
-### Resume, update, fill gaps
-
-If there is no file yet, collect from newest trades downward.  
-If a file already exists, collect **only newer trades** and stop when they overlap the old data.  
-If a run was interrupted, **resume** from a temp file. If the newest side is filled but the oldest side is missing, fill that gap only.
-
-“Done” is not just a raw row count. A size counts as complete when it is close to the expected volume on the page (~90%), so a temporary stall is not treated as finished.
-
-### When something blocks the run
-
-| Situation | Response |
-| --- | --- |
-| No new trades appear | Wait, reload, then retry remaining sizes |
-| Session expired | Log in again and continue |
-| Scroll looks stuck | Nudge upward; skip the size if it still fails |
-| Wrong size or bad date | Drop those rows; stop that size if needed |
-| Size volumes look wrong | Re-run size analysis |
-| Volume is extremely high | Skip that size for safety |
-
-Batch mode: read the queue → fill missing sizes → merge and remove from the queue on success → notify on stalls or skips.
-
-## Keeping the data clean
-
-| Rule | Why |
-| --- | --- |
-| Size match check | Keep other sizes from mixing into a batch |
-| Compare to expected volume | Decide whether a size is complete enough |
-| Relative → absolute dates | Turn “3 hours ago” into real dates at fact export |
-| Deduplicate on re-run | Keep only new trades |
-| Master cache | Reuse brand, release date, retail, size mix |
-| Split size keys | Same mm with different US labels stay separate |
-
-## From CSV to fact
-
-One row = one trade.
-
-| Step | Output |
-| --- | --- |
-| 1 | CSV per size |
-| 2 | One merged file per model (+ SKU) |
-| 3 | Cross-model sales_fact (SKU, Size, Price, Date, DeliveryType) |
-
-## Data modeling (star schema)
-
-In Power BI, a trade fact joins product, brand, and date dimensions.
-
-| Table | Role |
-| --- | --- |
-| fact_sales | One trade (SKU, Size, Price, DeliveryType, DateKey …) |
-| dim_product | Model, names, category, retail, release date |
-| dim_brand | Brand |
-| dim_date | Date |
-| What-if | Analysis period, profit target, Sales/Qty, signal toggles |
-
-Key measures: `%Average Premium`, `Daily Avg Price`, Bollinger / RSI / Trend signals, `KREAM Price Forecast`.
-
-## Dashboard
+Publish-to-web Power BI report (source collector stays private).
 
 <PowerBIEmbed
   src="https://app.powerbi.com/view?r=eyJrIjoiMWE1NDc3ZDktNWVjNS00ZDJlLTg2NTEtMjk4MDNiOTE1MTE3IiwidCI6ImViMWYwODU3LTNiNTEtNDU3Zi05NTM2LWEwNzAyMDBiYjJmMiJ9&pageName=b42bd021ce2683771eed"
   title="Kream resale dashboard"
 />
-
-Report pages:
 
 | Page | Contents |
 | --- | --- |
@@ -103,25 +21,35 @@ Report pages:
 | Premium by brand | Brand premium, retail vs resale, weekday vs weekend |
 | Size heatmap | Size × brand premium, trend by delivery type |
 
-Sample observations:
+## Problem
 
-- About **3M** trades, ~**912bn** KRW sales, ~**59%** average premium
-- Sales concentration: Jordan → Nike → Adidas
-- Jordan is a clear premium outlier versus retail
+Resale decisions need how often a model×size trades, at what price, and at what premium to retail. A few recent rows on a product page are not enough for seasonality or size gaps. Histories are long and easy to interrupt, so a one-shot scrape is not enough.
+
+## Approach
+
+1. **Collect** — Playwright attaches to logged-in Chrome; single / batch / queue modes collect trades by size into CSV
+2. **Resume & update** — incremental newer trades, resume from temp files, fill oldest-side gaps; a size is “done” near ~90% of expected page volume
+3. **Clean** — size match checks, relative→absolute dates, dedupe, master cache, split size keys
+4. **Model** — per-size CSV → model merge → cross-model `sales_fact` → Power BI star schema (fact + product / brand / date + what-if)
+
+The dashboard is for **which model×size to watch, avoid, or revisit** — not a buy button.
+
+## Results
+
+Sample scale: about **3M** trades, ~**912bn** KRW sales, ~**59%** average premium.
+
+- Sales concentration: Jordan → Nike → Adidas; Jordan is a clear premium outlier versus retail
 - Premium also splits by size, delivery type, and collaboration
+- **Monitor:** high volume + elevated premium with a clear size split
+- **Avoid / wait:** thin history or premium that only looks good on a short window
+- **Revisit:** weekday/weekend gaps or delivery-type shifts that change expected net
 
-## DAX / modeling notes
+## Limitations
 
-```dax
-%Average Premium =
-DIVIDE (
-    [Daily Avg Price] - SELECTEDVALUE ( dim_product[Retail_Price] ),
-    SELECTEDVALUE ( dim_product[Retail_Price] )
-)
-```
-
-- Attributes come through relationships; calculations live in measures.
-- Signals combine fact measures with what-if period and profit target.
+- Source collector stays private; the public artifact is the Publish-to-web report (fully open, no auth)
+- Coverage and freshness depend on which products were queued and when the last incremental run finished
+- Premium and Bollinger-style signals are descriptive on historical trades — not a calibrated pricing or inventory model
+- Publish-to-web is unsuitable for sensitive data; this demo uses an analysis model intended for portfolio viewing
 
 ## Stack
 
@@ -132,23 +60,33 @@ DIVIDE (
 | ETL | Per-size CSV → merge → sales_fact |
 | Analytics | Power BI (star schema, DAX, what-if) |
 
-## Results
+## Notes
 
-Built a trade collector that can resume and update by size, exported a sales fact, and connected it to a Power BI report for premium, price, and signals — embedded above.
+<details>
+<summary>Collection ops, star schema, DAX</summary>
 
-## Decision use
+**Collection steps:** product/queue → model + expected volume per size → incomplete sizes only → CSV (size, price, date, delivery) → merge → sales fact → Power BI.
 
-The dashboard is for **which model×size to watch, avoid, or revisit** — not a buy button.
+**When something blocks:** wait/reload/retry; re-login on session expiry; nudge stuck scrolls; drop wrong size/date rows; re-run size analysis; skip extremely high-volume sizes.
 
-- **Monitor:** high volume + elevated premium with a clear size split (e.g. Jordan concentration and size heatmap)
-- **Avoid / wait:** thin trade history or premium that only looks good on a short window (Signals + period what-if)
-- **Revisit:** weekend vs weekday premium gaps or delivery-type shifts that change expected net
+**Star schema**
 
-Sample scale behind those views: ~**3M** trades, ~**912bn** KRW sales, ~**59%** average premium — useful for relative ranking, not a guarantee on the next trade.
+| Table | Role |
+| --- | --- |
+| fact_sales | One trade (SKU, Size, Price, DeliveryType, DateKey …) |
+| dim_product | Model, names, category, retail, release date |
+| dim_brand | Brand |
+| dim_date | Date |
+| What-if | Analysis period, profit target, Sales/Qty, signal toggles |
 
-## Limitations
+```dax
+%Average Premium =
+DIVIDE (
+    [Daily Avg Price] - SELECTEDVALUE ( dim_product[Retail_Price] ),
+    SELECTEDVALUE ( dim_product[Retail_Price] )
+)
+```
 
-- Source collector stays private; the public artifact is the Publish-to-web report (fully open, no auth)
-- Coverage and freshness depend on which products were queued and when the last incremental run finished
-- Premium and Bollinger-style signals are descriptive on historical trades — not a calibrated pricing or inventory model
-- Publish-to-web is unsuitable for sensitive data; this demo uses an analysis model intended for portfolio viewing
+Attributes come through relationships; calculations live in measures. Signals combine fact measures with what-if period and profit target.
+
+</details>

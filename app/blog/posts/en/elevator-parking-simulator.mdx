@@ -4,13 +4,21 @@ publishedAt: '2026-07-27'
 summary: 'Apartment elevator parking — fixed passenger scenarios, regime Batch evidence, and clear limits of a synthetic ops lab.'
 ---
 
-## Operational question
+## Demo
 
-Where should idle elevators wait in an **apartment** bank? Parking placement is a policy choice; rankings depend on traffic regime.
+Pick a **regime preset** (Evening / Morning / High arrival) → Stay → Start, then **Compare all** and **Batch N=100**. Prefer **Open full screen** if the embed feels tight.
 
 [GitHub](https://github.com/yoonbemail-sketch/elevator) · [Full demo](/elevator/index.html) · [Insights](/elevator/INSIGHTS.md)
 
-## Policy options
+<DemoEmbed
+  src="/elevator/index.html"
+  href="/elevator/index.html"
+  title="Elevator Parking Simulator — fixed scenario compare"
+/>
+
+## Problem
+
+Where should idle elevators wait in an **apartment** bank? Parking placement is a policy choice; rankings depend on traffic regime.
 
 | Strategy | Idle cars go to… |
 | --- | --- |
@@ -20,16 +28,14 @@ Where should idle elevators wait in an **apartment** bank? Parking placement is 
 | Spread | Even homes along the shaft |
 | Demand | Recent call-heat floors |
 
-## Experiment design
+## Approach
 
 1. Traffic knobs + **scenario seed** define one passenger stream
 2. **Replay** / **Compare all** hold that stream fixed so only parking policy changes
 3. **Batch N=100** (seeds 42…141) ranks strategies with sticky hall dispatch
 4. Change one Policy knob; re-run Batch before claiming a win
 
-## Metrics
-
-Avg / max wait (ticks), empty travel (floors), **IdleFrac** (parking-sensitive / mixed / saturated), ticks, completed. Rank-by picks the objective — there is no single score.
+Metrics: avg / max wait (ticks), empty travel (floors), **IdleFrac** (parking-sensitive / mixed / saturated), ticks, completed. Rank-by picks the objective — there is no single score.
 
 ## Results
 
@@ -41,38 +47,29 @@ Evening default vs morning vs saturated high-arrival ([REGIME](/elevator/benchma
 | Morning (arr 15%, target 80) | 50% | **Spread** 4.36 | 4.16 |
 | High arrival (arr 90%, target 200) | **5%** | Mid ≈ pack ~34–35 | **0.90** |
 
-Evening sticky vs reassign A/B: Stay max wait improves under reassign; Mid mean wait **worsens** (4.17→5.02) — myopic idle steal. Table: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md).
-
-## Recommendation
-
 Pick parking by regime (Lobby for evening ingress wait; Spread for morning egress). When IdleFrac is saturated, stop tuning parking — next lever is **zoning** (documented, not coded). Do not ship a “global best” policy from one Replay.
+
+1. **No universal best parking policy** — evening Lobby, morning Spread; gaps collapse when saturated
+2. **Parking needs idle time** — IdleFrac diagnoses parking-sensitive vs saturated
+3. **Parking ≠ hall dispatch** — sticky orphans vs reassign thrash (Mid worse on N=100)
+4. **Batch N=100 before/after** one Policy change
+
+Full tree + interview Q&A: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md) · [한국어](/elevator/INSIGHTS.ko.md).
 
 ## Limitations
 
 Synthetic lab: Bernoulli arrivals, tick time, distance+load hall cost (not group ETA), **no real-building calibration**. Use for lever separation and fair A/B — not as a vendor-controller replacement study. Batch winRate can exceed 100% on ties.
 
-## Demo
+## Stack
 
-In the sim: pick a **regime preset** (Evening / Morning / High arrival) → Stay → Start, then **Compare all** and **Batch N=100**. Prefer **Open full screen** if the embed feels tight.
+Vanilla HTML · CSS · JavaScript · `/elevator/`
 
-<DemoEmbed
-  src="/elevator/index.html"
-  href="/elevator/index.html"
-  title="Elevator Parking Simulator — fixed scenario compare"
-/>
+## Notes
 
-## Takeaways
+<details>
+<summary>Sticky vs reassign, traffic model, evening A/B detail</summary>
 
-1. **No universal best parking policy** — evening Lobby, morning Spread; gaps collapse when saturated.
-2. **Parking needs idle time** — IdleFrac diagnoses parking-sensitive vs saturated.
-3. **Parking ≠ hall dispatch** — sticky orphans vs reassign thrash (Mid worse on N=100).
-4. **Batch N=100 before/after** one Policy change. Scope frozen — no further dispatch variants.
-
-Full tree + interview Q&A: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md) · [한국어](/elevator/INSIGHTS.ko.md).
-
-## Insight: sticky vs reassign
-
-**Sticky** keeps the first car; **Reassign** rescores each tick.
+**Sticky vs reassign:** Sticky keeps the first car; Reassign rescores each tick.
 
 ```text
 E1: MOVING ↑ load 4/8   pickup #76 @16→L1
@@ -80,9 +77,9 @@ E3: IDLE @ 20
 E4: IDLE @ 20
 ```
 
-## Traffic model (apartment default)
+Evening sticky vs reassign A/B: Stay max wait improves under reassign; Mid mean wait **worsens** (4.17→5.02) — myopic idle steal. Table: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md).
 
-Passenger OD is generated once from the seed + traffic knobs, then reused for Replay / Compare all.
+**Traffic model (apartment default):** Passenger OD is generated once from the seed + traffic knobs, then reused for Replay / Compare all.
 
 | Period | Origin mix (approx.) | Story |
 | --- | --- | --- |
@@ -92,6 +89,4 @@ Passenger OD is generated once from the seed + traffic knobs, then reused for Re
 
 Arrival rate = per-tick Bernoulli (default 15%). Interfloor % = upper→upper chance (default 10%).
 
-## Tech stack
-
-Vanilla HTML · CSS · JavaScript · `/elevator/`
+</details>

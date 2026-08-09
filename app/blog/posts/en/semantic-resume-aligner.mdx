@@ -4,21 +4,51 @@ publishedAt: '2026-07-10'
 summary: 'Local Analyze → Apply → Autofill workflow: match resume versions to a selected job tab, then fill ATS forms under applicant review.'
 ---
 
-## Operational question
-
-How can repetitive ATS applications be accelerated without unsupervised submission, and without pasting job URLs into a third-party service?
-
-This project is a local Streamlit assistant. It attaches to a Chrome tab the user selects, ranks tailored resume versions against the job description, and fills recognized form fields from a private resume hub. Final submission remains with the applicant.
-
-[GitHub](https://github.com/yoonbemail-sketch/semantic-resume-aligner)
-
 ## Demo
 
-Analyze and Autofill are shown as separate sections. Each section uses bookmark tabs and a single GIF slot. Place recordings under `public/demo/semantic-resume-aligner/` using the filenames below; missing files render as placeholders.
+Analyze and Autofill as separate sections, each with bookmark tabs and one GIF slot. Place recordings under `public/demo/semantic-resume-aligner/`; missing files show as placeholders.
 
 <DemoGifSections locale="en" />
 
-## Method
+## Problem
+
+How can repetitive ATS applications be accelerated without unsupervised submission, and without pasting job URLs into a third-party service?
+
+A local Streamlit assistant attaches to a Chrome tab the user selects, ranks tailored resume versions against the job description, and fills recognized form fields from a private resume hub. Final submission stays with the applicant.
+
+[GitHub](https://github.com/yoonbemail-sketch/semantic-resume-aligner)
+
+## Approach
+
+1. **Analyze** — extract the JD from the active LinkedIn job tab; score applyability first, then rank resume versions (deterministic by default; optional LLM via `MATCH_USE_LLM=1`)
+2. **Apply** — open or focus the company ATS tab under user control
+3. **Autofill** — soft ATS detection + shared field catalog; experience adapters for Workday / Phenom / Dayforce page shapes
+4. **Human review** — report filled vs unmatched fields; never click Submit
+
+Operating constraints: no automatic submit; fill visibility; curated hub fields preserved on import; unknown hosts may still receive catalog fills.
+
+## Results
+
+- Local **Analyze → Apply → Autofill** pipeline is implemented and documented on GitHub
+- Recommendation labels: `APPLY` / `APPLY_WITH_CAUTION` / `DO_NOT_APPLY` / `NEEDS_REVIEW`
+- Catalog coverage includes Workday, Greenhouse, SuccessFactors, Dayforce, Phenom, Jobvite, Oracle Cloud, and similar hosts
+- Demo GIF recordings and a field-level validation table (ATS × fields filled × failure modes) are forthcoming
+
+## Limitations
+
+- Unsupervised end-to-end submission is out of scope
+- ATS coverage is incomplete and DOM-signature based; new portals need catalog or adapter work
+- Recommendation labels do not yet have a published accuracy sample
+- The private resume hub remains local; this post does not include personal data
+
+## Stack
+
+Python · Streamlit · Playwright (CDP) · Pydantic · BeautifulSoup · pypdf / python-docx · optional Gemini / Anthropic / OpenAI
+
+## Notes
+
+<details>
+<summary>Pipeline diagram, Zero-URL contract, design notes</summary>
 
 ```text
 Active Job Tab ──> JD Extractor ──> Matcher ──> Structured Gap Analysis
@@ -30,37 +60,13 @@ Active Job Tab ──> JD Extractor ──> Matcher ──> Structured Gap Analy
 Active ATS Tab ──> Soft ATS Hint ──> Catalog / Adapters ──> Reviewed Form Fill
 ```
 
-The Streamlit UI follows **Analyze → Apply → Autofill**. Matching is deterministic by default: applyability is evaluated first, then resume versions are ranked. An optional LLM path is available via `MATCH_USE_LLM=1`. Autofill combines soft ATS detection with a shared field catalog (Workday, Greenhouse, SuccessFactors, Dayforce, Phenom, Jobvite, Oracle Cloud, and similar hosts). Experience adapters cover Workday, Phenom, and Dayforce page shapes.
+**Zero-URL:** Playwright attaches over CDP to a user-managed Chrome instance and operates only on an explicitly selected tab. The UI does not accept a pasted job URL or JD text.
 
-### Zero-URL contract
-
-Playwright attaches over CDP to a user-managed Chrome instance and operates only on an explicitly selected tab. The UI does not accept a pasted job URL or job-description text. Navigation, authentication, and submission stay under applicant control.
-
-### Operating constraints
-
-1. **No automatic submit** — the tool never posts an application without explicit user action
-2. **Fill visibility** — mapped fields and unmatched fields are reported for manual completion
-3. **Curated profile preservation** — hub profile fields are not overwritten by stale import text
-4. **Soft ATS detection** — unknown hosts may still receive catalog fills; Submit is never clicked
-
-## Status
-
-The local pipeline is implemented and documented on GitHub. Demo GIF recordings and a field-level validation table (ATS × fields filled × failure modes) are forthcoming.
-
-## Limitations
-
-- Unsupervised end-to-end submission is out of scope
-- ATS coverage is incomplete and based on DOM signatures; new portals require catalog or adapter work
-- Recommendation labels (`APPLY` / `APPLY_WITH_CAUTION` / `DO_NOT_APPLY` / `NEEDS_REVIEW`) do not yet have a published accuracy sample
-- The private resume hub remains local; this post does not include personal data
-
-## Tech stack
-
-Python · Streamlit · Playwright (CDP) · Pydantic · BeautifulSoup · pypdf / python-docx · optional Gemini / Anthropic / OpenAI
-
-## Design notes
+**Design notes**
 
 - Keep durable applicant data separate from platform DOM details and optional model calls
 - Validate match results with Pydantic; keep the default path deterministic
 - Prefer importer-based resume refreshes over hardcoded prose that drifts out of date
 - Treat ATS detection from local DOM signatures as a hint, not a paid URL-classification gate
+
+</details>
