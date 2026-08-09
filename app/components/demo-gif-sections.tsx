@@ -8,12 +8,99 @@ export type DemoGifTab = {
   caption: string
 }
 
-type DemoGifSectionsProps = {
-  analyzeTitle?: string
-  autofillTitle?: string
-  analyzeTabs: DemoGifTab[]
-  autofillTabs: DemoGifTab[]
-  placeholderHint?: string
+type Locale = 'en' | 'ko'
+
+const DEMO_BASE = '/demo/semantic-resume-aligner'
+
+const COPY: Record<
+  Locale,
+  {
+    analyzeTitle: string
+    autofillTitle: string
+    placeholderHint: string
+    analyzeTabs: DemoGifTab[]
+    autofillTabs: DemoGifTab[]
+  }
+> = {
+  en: {
+    analyzeTitle: 'Analyze',
+    autofillTitle: 'Autofill',
+    placeholderHint: 'GIF coming soon — drop the recording into public/.',
+    analyzeTabs: [
+      {
+        label: 'APPLY',
+        src: `${DEMO_BASE}/analyze-apply.gif`,
+        caption: 'Clear APPLY with a recommended resume version.',
+      },
+      {
+        label: 'APPLY WITH CAUTION',
+        src: `${DEMO_BASE}/analyze-caution.gif`,
+        caption: 'Worth applying, with preferred gaps still visible.',
+      },
+      {
+        label: 'DO NOT APPLY',
+        src: `${DEMO_BASE}/analyze-do-not-apply.gif`,
+        caption: 'Hard stop — no resume push when applyability fails.',
+      },
+    ],
+    autofillTabs: [
+      {
+        label: 'Work & education',
+        src: `${DEMO_BASE}/autofill-experience.gif`,
+        caption: 'Experience rows, short role blurbs, and education from the hub.',
+      },
+      {
+        label: 'Profile basics',
+        src: `${DEMO_BASE}/autofill-profile.gif`,
+        caption: 'Contact and work-authorization answers; availability left blank.',
+      },
+      {
+        label: 'Voluntary info',
+        src: `${DEMO_BASE}/autofill-voluntary.gif`,
+        caption:
+          'Sex, gender identity, ethnicity, and acknowledgment — Submit stays manual.',
+      },
+    ],
+  },
+  ko: {
+    analyzeTitle: 'Analyze',
+    autofillTitle: 'Autofill',
+    placeholderHint: 'GIF 준비 중 — public/에 녹화본을 넣으세요.',
+    analyzeTabs: [
+      {
+        label: 'APPLY',
+        src: `${DEMO_BASE}/analyze-apply.gif`,
+        caption: 'APPLY와 추천 resume 버전이 바로 보이는 결과.',
+      },
+      {
+        label: 'APPLY WITH CAUTION',
+        src: `${DEMO_BASE}/analyze-caution.gif`,
+        caption: '지원 가치는 있으나 preferred gap이 남는 경우.',
+      },
+      {
+        label: 'DO NOT APPLY',
+        src: `${DEMO_BASE}/analyze-do-not-apply.gif`,
+        caption: 'Applyability 실패 시 resume 추천 없이 멈춤.',
+      },
+    ],
+    autofillTabs: [
+      {
+        label: '경력·학력',
+        src: `${DEMO_BASE}/autofill-experience.gif`,
+        caption: '경력 행, 짧은 role description, 학력을 hub에서 채움.',
+      },
+      {
+        label: '기본 정보',
+        src: `${DEMO_BASE}/autofill-profile.gif`,
+        caption: '연락처·근무 허가 답변을 채우고 availability는 비워 둠.',
+      },
+      {
+        label: '자발적 정보',
+        src: `${DEMO_BASE}/autofill-voluntary.gif`,
+        caption: 'Sex, Gender Identity, ethnicity, 동의 체크 — Submit는 수동.',
+      },
+    ],
+  },
 }
 
 function GifSlot({
@@ -78,10 +165,11 @@ function TabbedGifSection({
   placeholderHint: string
 }) {
   const [active, setActive] = useState(0)
-  const safeIndex = Math.min(active, Math.max(tabs.length - 1, 0))
-  const current = tabs[safeIndex]
+  const list = Array.isArray(tabs) ? tabs : []
+  const safeIndex = Math.min(active, Math.max(list.length - 1, 0))
+  const current = list[safeIndex]
 
-  if (!tabs.length || !current) return null
+  if (!list.length || !current) return null
 
   return (
     <section className="my-10 w-full">
@@ -93,7 +181,7 @@ function TabbedGifSection({
         aria-label={title}
         className="flex flex-wrap gap-x-5 gap-y-2 border-b border-neutral-200 dark:border-neutral-800"
       >
-        {tabs.map((tab, index) => {
+        {list.map((tab, index) => {
           const selected = index === safeIndex
           return (
             <button
@@ -125,24 +213,20 @@ function TabbedGifSection({
   )
 }
 
-export function DemoGifSections({
-  analyzeTitle = 'Analyze',
-  autofillTitle = 'Autofill',
-  analyzeTabs,
-  autofillTabs,
-  placeholderHint = 'GIF coming soon — drop the recording into public/.',
-}: DemoGifSectionsProps) {
+export function DemoGifSections({ locale = 'en' }: { locale?: Locale }) {
+  const copy = COPY[locale] ?? COPY.en
+
   return (
     <div className="not-prose w-full">
       <TabbedGifSection
-        title={analyzeTitle}
-        tabs={analyzeTabs}
-        placeholderHint={placeholderHint}
+        title={copy.analyzeTitle}
+        tabs={copy.analyzeTabs}
+        placeholderHint={copy.placeholderHint}
       />
       <TabbedGifSection
-        title={autofillTitle}
-        tabs={autofillTabs}
-        placeholderHint={placeholderHint}
+        title={copy.autofillTitle}
+        tabs={copy.autofillTabs}
+        placeholderHint={copy.placeholderHint}
       />
     </div>
   )
