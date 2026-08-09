@@ -6,20 +6,14 @@ summary: 'Trade-history collection → sales fact → Power BI for premium, seas
 
 ## Demo
 
-Publish-to-web Power BI report (source collector stays private).
+Source private · [Open dashboard](https://app.powerbi.com/view?r=eyJrIjoiMWE1NDc3ZDktNWVjNS00ZDJlLTg2NTEtMjk4MDNiOTE1MTE3IiwidCI6ImViMWYwODU3LTNiNTEtNDU3Zi05NTM2LWEwNzAyMDBiYjJmMiJ9&pageName=b42bd021ce2683771eed)
+
+Publish-to-web Power BI report.
 
 <PowerBIEmbed
   src="https://app.powerbi.com/view?r=eyJrIjoiMWE1NDc3ZDktNWVjNS00ZDJlLTg2NTEtMjk4MDNiOTE1MTE3IiwidCI6ImViMWYwODU3LTNiNTEtNDU3Zi05NTM2LWEwNzAyMDBiYjJmMiJ9&pageName=b42bd021ce2683771eed"
   title="Kream resale dashboard"
 />
-
-| Page | Contents |
-| --- | --- |
-| Overview | Sales, quantity, average premium; sales by date and brand |
-| Price trend | Daily average price by brand / product / size |
-| Signals | Quantity vs price, Bollinger bands, period / profit-target what-if |
-| Premium by brand | Brand premium, retail vs resale, weekday vs weekend |
-| Size heatmap | Size × brand premium, trend by delivery type |
 
 ## Problem
 
@@ -53,17 +47,22 @@ Sample scale: about **3M** trades, ~**912bn** KRW sales, ~**59%** average premiu
 
 ## Stack
 
-| Layer | Tools |
-| --- | --- |
-| Collection | Python, Playwright (attach to Chrome) |
-| Ops | Resume, incremental update, wait/retry on stalls, re-login |
-| ETL | Per-size CSV → merge → sales_fact |
-| Analytics | Power BI (star schema, DAX, what-if) |
+Python · Playwright (Chrome attach) · CSV → sales_fact ETL · Power BI (star schema, DAX, what-if)
 
 ## Notes
 
 <details>
-<summary>Collection ops, star schema, DAX</summary>
+<summary>Report pages, collection ops, star schema, DAX</summary>
+
+**Report pages**
+
+| Page | Contents |
+| --- | --- |
+| Overview | Sales, quantity, average premium; sales by date and brand |
+| Price trend | Daily average price by brand / product / size |
+| Signals | Quantity vs price, Bollinger bands, period / profit-target what-if |
+| Premium by brand | Brand premium, retail vs resale, weekday vs weekend |
+| Size heatmap | Size × brand premium, trend by delivery type |
 
 **Collection steps:** product/queue → model + expected volume per size → incomplete sizes only → CSV (size, price, date, delivery) → merge → sales fact → Power BI.
 

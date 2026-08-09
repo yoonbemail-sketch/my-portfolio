@@ -6,7 +6,9 @@ summary: '로컬 Analyze → Apply → Autofill 워크플로. 선택한 채용 �
 
 ## Demo
 
-Analyze와 Autofill을 섹션으로 나누고, 각 섹션은 책갈피 탭과 GIF 슬롯 하나를 사용합니다. 녹화본은 `public/demo/semantic-resume-aligner/`에 두면 되며, 없으면 placeholder가 표시됩니다.
+[GitHub](https://github.com/yoonbemail-sketch/semantic-resume-aligner)
+
+Analyze와 Autofill을 섹션으로 나누고, 각 섹션은 책갈피 탭과 GIF 슬롯 하나를 사용합니다.
 
 <DemoGifSections locale="ko" />
 
@@ -15,8 +17,6 @@ Analyze와 Autofill을 섹션으로 나누고, 각 섹션은 책갈피 탭과 GI
 반복적인 ATS 지원을 어떻게 줄이되, 검수 없는 자동 제출과 채용 URL을 외부 서비스에 붙여넣는 방식은 피할 수 있을까?
 
 로컬 Streamlit 도구가 사용자가 선택한 Chrome 탭에 연결하고, 직무 설명에 맞춰 맞춤 이력서 버전을 순위한 뒤, 비공개 resume hub로 인식된 폼 필드를 채웁니다. 최종 제출은 지원자가 수행합니다.
-
-[GitHub](https://github.com/yoonbemail-sketch/semantic-resume-aligner)
 
 ## Approach
 
@@ -32,7 +32,7 @@ Analyze와 Autofill을 섹션으로 나누고, 각 섹션은 책갈피 탭과 GI
 - 로컬 **Analyze → Apply → Autofill** 파이프라인이 구현되어 있으며 GitHub에 문서화됨
 - 추천 라벨: `APPLY` / `APPLY_WITH_CAUTION` / `DO_NOT_APPLY` / `NEEDS_REVIEW`
 - 카탈로그 대상: Workday, Greenhouse, SuccessFactors, Dayforce, Phenom, Jobvite, Oracle Cloud 등
-- 데모 GIF와 필드 단위 검증 표(ATS × 채움 필드 × 실패 모드)는 추후 공개 예정
+- 필드 단위 검증 표(ATS × 채움 필드 × 실패 모드)와 공개 정확도 샘플은 추후 공개 예정
 
 ## Limitations
 

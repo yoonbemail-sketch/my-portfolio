@@ -6,9 +6,9 @@ summary: 'Apartment elevator parking — fixed passenger scenarios, regime Batch
 
 ## Demo
 
-Pick a **regime preset** (Evening / Morning / High arrival) → Stay → Start, then **Compare all** and **Batch N=100**. Prefer **Open full screen** if the embed feels tight.
-
 [GitHub](https://github.com/yoonbemail-sketch/elevator) · [Full demo](/elevator/index.html) · [Insights](/elevator/INSIGHTS.md)
+
+Pick a **regime preset** (Evening / Morning / High arrival) → Stay → Start, then **Compare all** and **Batch N=100**. Prefer **Open full screen** if the embed feels tight.
 
 <DemoEmbed
   src="/elevator/index.html"
@@ -47,14 +47,7 @@ Evening default vs morning vs saturated high-arrival ([REGIME](/elevator/benchma
 | Morning (arr 15%, target 80) | 50% | **Spread** 4.36 | 4.16 |
 | High arrival (arr 90%, target 200) | **5%** | Mid ≈ pack ~34–35 | **0.90** |
 
-Pick parking by regime (Lobby for evening ingress wait; Spread for morning egress). When IdleFrac is saturated, stop tuning parking — next lever is **zoning** (documented, not coded). Do not ship a “global best” policy from one Replay.
-
-1. **No universal best parking policy** — evening Lobby, morning Spread; gaps collapse when saturated
-2. **Parking needs idle time** — IdleFrac diagnoses parking-sensitive vs saturated
-3. **Parking ≠ hall dispatch** — sticky orphans vs reassign thrash (Mid worse on N=100)
-4. **Batch N=100 before/after** one Policy change
-
-Full tree + interview Q&A: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md) · [한국어](/elevator/INSIGHTS.ko.md).
+Pick parking by regime (Lobby for evening ingress; Spread for morning egress). When IdleFrac is saturated, stop tuning parking — next lever is **zoning** (documented, not coded). Do not ship a “global best” from one Replay. Parking needs idle time; parking policy is not the same as hall dispatch.
 
 ## Limitations
 
@@ -67,7 +60,16 @@ Vanilla HTML · CSS · JavaScript · `/elevator/`
 ## Notes
 
 <details>
-<summary>Sticky vs reassign, traffic model, evening A/B detail</summary>
+<summary>Takeaways, sticky vs reassign, traffic model</summary>
+
+**Takeaways**
+
+1. No universal best parking policy — evening Lobby, morning Spread; gaps collapse when saturated
+2. IdleFrac diagnoses parking-sensitive vs saturated regimes
+3. Sticky orphans vs reassign thrash (Mid worse on N=100 sticky vs reassign A/B)
+4. Re-run Batch N=100 before/after one Policy change
+
+Full tree + interview Q&A: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md) · [한국어](/elevator/INSIGHTS.ko.md).
 
 **Sticky vs reassign:** Sticky keeps the first car; Reassign rescores each tick.
 
@@ -77,7 +79,7 @@ E3: IDLE @ 20
 E4: IDLE @ 20
 ```
 
-Evening sticky vs reassign A/B: Stay max wait improves under reassign; Mid mean wait **worsens** (4.17→5.02) — myopic idle steal. Table: [`/elevator/INSIGHTS.md`](/elevator/INSIGHTS.md).
+Evening sticky vs reassign A/B: Stay max wait improves under reassign; Mid mean wait **worsens** (4.17→5.02) — myopic idle steal.
 
 **Traffic model (apartment default):** Passenger OD is generated once from the seed + traffic knobs, then reused for Replay / Compare all.
 

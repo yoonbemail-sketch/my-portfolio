@@ -100,6 +100,11 @@ export default async function Blog(props: {
       <h1 className="title font-semibold text-2xl tracking-tight leading-snug">
         {post.metadata.title}
       </h1>
+      {post.metadata.summary ? (
+        <p className="mt-3 text-base text-neutral-700 dark:text-neutral-300 leading-relaxed">
+          {post.metadata.summary}
+        </p>
+      ) : null}
       <div className="flex justify-between items-center mt-2 mb-8 text-sm">
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
           {formatDate(post.metadata.publishedAt, locale, true)}
