@@ -14,12 +14,48 @@ A local, human-in-the-loop assistant. It attaches to a user-selected Chrome tab,
 
 ## Demo
 
-<VideoEmbed
-  src=""
-  title="Semantic Resume Aligner — Analyze → Apply → Autofill"
-/>
+Two beats — decide, then fill. Tabs swap one GIF at a time; drop files into
+`public/demo/semantic-resume-aligner/` using the placeholder paths.
 
-Short walkthrough video coming soon. Until then, the pipeline and constraints below are the hiring artifact.
+<DemoGifSections
+  analyzeTitle="Analyze"
+  autofillTitle="Autofill"
+  placeholderHint="GIF coming soon — drop the recording into public/."
+  analyzeTabs={[
+    {
+      label: 'APPLY',
+      src: '/demo/semantic-resume-aligner/analyze-apply.gif',
+      caption: 'Clear APPLY with a recommended resume version.',
+    },
+    {
+      label: 'APPLY WITH CAUTION',
+      src: '/demo/semantic-resume-aligner/analyze-caution.gif',
+      caption: 'Worth applying, with preferred gaps still visible.',
+    },
+    {
+      label: 'DO NOT APPLY',
+      src: '/demo/semantic-resume-aligner/analyze-do-not-apply.gif',
+      caption: 'Hard stop — no resume push when applyability fails.',
+    },
+  ]}
+  autofillTabs={[
+    {
+      label: 'Work & education',
+      src: '/demo/semantic-resume-aligner/autofill-experience.gif',
+      caption: 'Experience rows, short role blurbs, and education from the hub.',
+    },
+    {
+      label: 'Profile basics',
+      src: '/demo/semantic-resume-aligner/autofill-profile.gif',
+      caption: 'Contact and work-authorization answers; availability left blank.',
+    },
+    {
+      label: 'Voluntary info',
+      src: '/demo/semantic-resume-aligner/autofill-voluntary.gif',
+      caption: 'Sex, gender identity, ethnicity, and acknowledgment — Submit stays manual.',
+    },
+  ]}
+/>
 
 ## Method
 
@@ -48,7 +84,7 @@ Playwright attaches over CDP to a user-managed Chrome instance and operates only
 
 ## Status
 
-Local HITL pipeline is implemented and documented on GitHub. Demo video is next; field-level validation table (ATS × fields filled × failure modes) will ship with that recording.
+Local HITL pipeline is implemented and documented on GitHub. Demo GIF clips are next; field-level validation table (ATS × fields filled × failure modes) will ship with those recordings.
 
 ## Limitations
 
