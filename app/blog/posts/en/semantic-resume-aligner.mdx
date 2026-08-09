@@ -22,16 +22,16 @@ Two beats — decide, then fill. Tabs swap one GIF at a time; drop files into
 ## Method
 
 ```text
-Active Job Tab ──> JD Extractor ──> Semantic Matcher ──> Structured Gap Analysis
+Active Job Tab ──> JD Extractor ──> Matcher ──> Structured Gap Analysis
                                          ^
                                          |
                                   Resume Data Hub
                                          |
                                          v
-Active ATS Tab ──> ATS Detection ──> Selector Strategy ──> Reviewed Form Fill
+Active ATS Tab ──> Soft ATS Hint ──> Catalog / Adapters ──> Reviewed Form Fill
 ```
 
-Streamlit UI: **Analyze → Apply → Autofill**. Matching gates on applyability first. Autofill uses soft ATS detection plus a shared field catalog (Workday, Greenhouse, SuccessFactors, Dayforce, Phenom, Oracle CX, and similar).
+Streamlit UI: **Analyze → Apply → Autofill**. Matching is deterministic by default (applyability first, then resume ranking; optional LLM via `MATCH_USE_LLM=1`). Autofill uses soft ATS detection plus a shared field catalog (Workday, Greenhouse, SuccessFactors, Dayforce, Phenom, Jobvite, Oracle Cloud, and similar), with experience adapters for Workday / Phenom / Dayforce page shapes.
 
 ### Zero-URL contract
 
@@ -42,7 +42,7 @@ Playwright attaches over CDP to a user-managed Chrome instance and operates only
 1. **No silent submit** — drafts are never posted without explicit approval
 2. **Diff visibility** — reviewer sees mapped fields and unmatched ones for manual entry
 3. **Preserve curated fields** — hub profile values are not overwritten by stale import prose
-4. **Fail closed** — ambiguous ATS pages or mappings stop safely rather than guessing
+4. **Soft ATS, hard submit boundary** — unknown hosts still try catalog fill; Submit is never clicked
 
 ## Status
 
@@ -51,17 +51,17 @@ Local HITL pipeline is implemented and documented on GitHub. Demo GIF clips are 
 ## Limitations
 
 - Not a fire-and-forget bot — unsupervised submit is intentionally out of scope
-- ATS coverage is partial and DOM-signature based; new portals need catalog work
-- LLM gap labels (`APPLY` / `APPLY_WITH_CAUTION` / `DO_NOT_APPLY` / `NEEDS_REVIEW`) still need a published accuracy sample
+- ATS coverage is partial and DOM-signature based; new portals need catalog / adapter work
+- Recommendation labels (`APPLY` / `APPLY_WITH_CAUTION` / `DO_NOT_APPLY` / `NEEDS_REVIEW`) still need a published accuracy sample
 - Private resume hub stays local; this write-up does not expose personal data
 
 ## Tech stack
 
-Python · Streamlit · Playwright (CDP) · Pydantic · BeautifulSoup · pypdf / python-docx · Gemini / Anthropic / OpenAI
+Python · Streamlit · Playwright (CDP) · Pydantic · BeautifulSoup · pypdf / python-docx · optional Gemini / Anthropic / OpenAI
 
 ## Design notes
 
-- Separate durable applicant data from platform-specific selectors and model reasoning
-- Validate LLM gap analysis with Pydantic
+- Separate durable applicant data from platform DOM details and optional model reasoning
+- Validate match results with Pydantic; default path stays deterministic
 - Prefer importer-based refreshes over hardcoding resume prose that goes stale
-- Detect ATS from local DOM signatures, not paid URL classifiers
+- Detect ATS from local DOM signatures as a hint, not a paid URL classifier gate

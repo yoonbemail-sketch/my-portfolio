@@ -6,6 +6,7 @@ Drop muted looping GIFs here (≈6–10s, ~1080px wide):
 |---|---|
 | `analyze-apply.gif` | APPLY |
 | `analyze-caution.gif` | APPLY WITH CAUTION |
+| `analyze-needs-review.gif` | NEEDS REVIEW |
 | `analyze-do-not-apply.gif` | DO NOT APPLY |
 | `autofill-experience.gif` | Work & education |
 | `autofill-profile.gif` | Profile basics |

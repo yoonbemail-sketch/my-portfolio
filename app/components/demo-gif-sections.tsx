@@ -38,6 +38,11 @@ const COPY: Record<
         caption: 'Worth applying, with preferred gaps still visible.',
       },
       {
+        label: 'NEEDS REVIEW',
+        src: `${DEMO_BASE}/analyze-needs-review.gif`,
+        caption: 'Mandatory fact unknown — resolve Yes/No in the hub, then re-analyze.',
+      },
+      {
         label: 'DO NOT APPLY',
         src: `${DEMO_BASE}/analyze-do-not-apply.gif`,
         caption: 'Hard stop — no resume push when applyability fails.',
@@ -47,7 +52,8 @@ const COPY: Record<
       {
         label: 'Work & education',
         src: `${DEMO_BASE}/autofill-experience.gif`,
-        caption: 'Experience rows, short role blurbs, and education from the hub.',
+        caption:
+          'Experience and education from the hub (Phenom also fills short Role description).',
       },
       {
         label: 'Profile basics',
@@ -78,6 +84,11 @@ const COPY: Record<
         caption: '지원 가치는 있으나 preferred gap이 남는 경우.',
       },
       {
+        label: '검토 필요',
+        src: `${DEMO_BASE}/analyze-needs-review.gif`,
+        caption: '필수 사실이 불명 — hub에서 Yes/No 후 다시 분석.',
+      },
+      {
         label: '지원하지 않음',
         src: `${DEMO_BASE}/analyze-do-not-apply.gif`,
         caption: 'Applyability 실패 시 resume 추천 없이 멈춤.',
@@ -87,7 +98,8 @@ const COPY: Record<
       {
         label: '경력·학력',
         src: `${DEMO_BASE}/autofill-experience.gif`,
-        caption: '경력 행, 짧은 role description, 학력을 hub에서 채움.',
+        caption:
+          '경력·학력을 hub에서 채움 (Phenom은 짧은 Role description도 채움).',
       },
       {
         label: '기본 정보',
