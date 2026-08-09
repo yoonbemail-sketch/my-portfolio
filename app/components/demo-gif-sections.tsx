@@ -63,22 +63,22 @@ const COPY: Record<
     ],
   },
   ko: {
-    analyzeTitle: 'Analyze',
-    autofillTitle: 'Autofill',
+    analyzeTitle: '분석',
+    autofillTitle: '자동 입력',
     placeholderHint: 'GIF 준비 중 — public/에 녹화본을 넣으세요.',
     analyzeTabs: [
       {
-        label: 'APPLY',
+        label: '지원',
         src: `${DEMO_BASE}/analyze-apply.gif`,
         caption: 'APPLY와 추천 resume 버전이 바로 보이는 결과.',
       },
       {
-        label: 'APPLY WITH CAUTION',
+        label: '주의하며 지원',
         src: `${DEMO_BASE}/analyze-caution.gif`,
         caption: '지원 가치는 있으나 preferred gap이 남는 경우.',
       },
       {
-        label: 'DO NOT APPLY',
+        label: '지원하지 않음',
         src: `${DEMO_BASE}/analyze-do-not-apply.gif`,
         caption: 'Applyability 실패 시 resume 추천 없이 멈춤.',
       },
@@ -92,12 +92,12 @@ const COPY: Record<
       {
         label: '기본 정보',
         src: `${DEMO_BASE}/autofill-profile.gif`,
-        caption: '연락처·근무 허가 답변을 채우고 availability는 비워 둠.',
+        caption: '연락처·근무 허가 답변을 채우고 입사 가능일은 비워 둠.',
       },
       {
         label: '자발적 정보',
         src: `${DEMO_BASE}/autofill-voluntary.gif`,
-        caption: 'Sex, Gender Identity, ethnicity, 동의 체크 — Submit는 수동.',
+        caption: '성별·Gender Identity·ethnicity·동의 체크 — 제출은 수동.',
       },
     ],
   },

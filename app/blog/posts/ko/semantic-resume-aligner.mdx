@@ -4,7 +4,7 @@ publishedAt: '2026-07-10'
 summary: '로컬 Analyze → Apply → Autofill 파이프라인. 선택한 채용 탭에 이력서 버전을 매칭하고, 사람 검수 하에 ATS 폼을 채웁니다.'
 ---
 
-## Operational question
+## 핵심 질문
 
 반복적인 ATS 지원을 빠르게 하면서도, 검수 없는 자동 입력의 추측 제출과 URL 붙여넣기 블랙박스는 어떻게 피할 수 있을까?
 
@@ -12,14 +12,14 @@ summary: '로컬 Analyze → Apply → Autofill 파이프라인. 선택한 채�
 
 [GitHub](https://github.com/yoonbemail-sketch/semantic-resume-aligner)
 
-## Demo
+## 데모
 
 두 박자 — 판단 후 작성. 탭마다 GIF 하나만 보이며, 파일은
 `public/demo/semantic-resume-aligner/`에 placeholder 경로 이름으로 넣으면 됩니다.
 
 <DemoGifSections locale="ko" />
 
-## Method
+## 방법
 
 ```text
 Active Job Tab ──> JD Extractor ──> Semantic Matcher ──> Structured Gap Analysis
@@ -33,33 +33,33 @@ Active ATS Tab ──> ATS Detection ──> Selector Strategy ──> Reviewed 
 
 Streamlit UI: **Analyze → Apply → Autofill**. 매칭은 먼저 지원 가능성(applyability)으로 걸러냅니다. Autofill은 soft ATS 감지와 공유 필드 카탈로그로 Workday, Greenhouse, SuccessFactors, Dayforce, Phenom, Oracle CX 등을 다룹니다.
 
-### Zero-URL contract
+### Zero-URL 계약
 
 Playwright가 CDP로 사용자가 관리하는 Chrome에 붙고, 명시적으로 선택한 탭에서만 동작합니다. UI는 채용 URL·JD 텍스트 붙여넣기를 받지 않습니다 — 탐색, 인증, 최종 제출은 지원자가 통제합니다.
 
-### Human-supervised constraints
+### Human-supervised 제약
 
 1. **No silent submit** — 명시적 승인 없이 draft를 게시하지 않음
 2. **Diff visibility** — 매핑된 필드와 수동 입력이 필요한 unmatched 필드를 리뷰어가 확인
 3. **Preserve curated fields** — hub profile 값을 오래된 import 문구로 덮어쓰지 않음
 4. **Fail closed** — 모호한 ATS 페이지·매핑은 추측하지 않고, 불확실하면 자동 입력을 중단
 
-## Status
+## 현황
 
 로컬 HITL 파이프라인은 구현되어 있고 GitHub에 문서화되어 있습니다. 다음은 데모 GIF이며, 그때 ATS × 채움 필드 × 실패 모드 검증 표도 함께 공개합니다.
 
-## Limitations
+## 한계
 
 - 완전 자동 제출 봇이 아님 — 검수 없는 자동 제출은 의도적으로 제외
 - ATS 커버리지는 부분적이며 DOM signature 기반; 새 포털은 카탈로그 작업 필요
 - LLM gap 라벨(`APPLY` / `APPLY_WITH_CAUTION` / `DO_NOT_APPLY` / `NEEDS_REVIEW`)의 공개 accuracy 샘플은 아직 없음
 - Private resume hub는 로컬에 둠; 이 글은 개인 데이터를 노출하지 않음
 
-## Tech stack
+## 기술 스택
 
 Python · Streamlit · Playwright (CDP) · Pydantic · BeautifulSoup · pypdf / python-docx · Gemini / Anthropic / OpenAI
 
-## Design notes
+## 설계 메모
 
 - 오래 쓰는 지원자 데이터와 플랫폼별 selector·모델 추론을 분리
 - LLM gap analysis를 Pydantic으로 검증
