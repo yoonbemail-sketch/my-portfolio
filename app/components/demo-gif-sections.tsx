@@ -25,46 +25,46 @@ const COPY: Record<
   en: {
     analyzeTitle: 'Analyze',
     autofillTitle: 'Autofill',
-    placeholderHint: 'Recording pending. Add the GIF under public/.',
+    placeholderHint: 'Recording pending. Add the MP4 under public/.',
     analyzeTabs: [
       {
         label: 'APPLY',
-        src: `${DEMO_BASE}/analyze-apply.gif`,
+        src: `${DEMO_BASE}/analyze-apply.mp4`,
         caption: 'APPLY recommendation with a selected resume version.',
       },
       {
         label: 'APPLY WITH CAUTION',
-        src: `${DEMO_BASE}/analyze-caution.gif`,
+        src: `${DEMO_BASE}/analyze-caution.mp4`,
         caption: 'Application remains viable; preferred-requirement gaps are listed.',
       },
       {
         label: 'NEEDS REVIEW',
-        src: `${DEMO_BASE}/analyze-needs-review.gif`,
+        src: `${DEMO_BASE}/analyze-needs-review.mp4`,
         caption:
           'A mandatory fact is unresolved. Record Yes/No in the hub, then re-run Analyze.',
       },
       {
         label: 'DO NOT APPLY',
-        src: `${DEMO_BASE}/analyze-do-not-apply.gif`,
+        src: `${DEMO_BASE}/analyze-do-not-apply.mp4`,
         caption: 'Applyability fails; no resume version is recommended.',
       },
     ],
     autofillTabs: [
       {
         label: 'Work & education',
-        src: `${DEMO_BASE}/autofill-experience.gif`,
+        src: `${DEMO_BASE}/autofill-experience.mp4`,
         caption:
           'Work history and education from the hub. On Phenom, Role description is also filled.',
       },
       {
         label: 'Profile basics',
-        src: `${DEMO_BASE}/autofill-profile.gif`,
+        src: `${DEMO_BASE}/autofill-profile.mp4`,
         caption:
           'Contact and work-authorization fields. Availability / start date is left blank.',
       },
       {
         label: 'Voluntary info',
-        src: `${DEMO_BASE}/autofill-voluntary.gif`,
+        src: `${DEMO_BASE}/autofill-voluntary.mp4`,
         caption:
           'Sex, gender identity, ethnicity, and acknowledgment. Submit remains manual.',
       },
@@ -73,46 +73,46 @@ const COPY: Record<
   ko: {
     analyzeTitle: '분석',
     autofillTitle: '자동 입력',
-    placeholderHint: '녹화본 준비 중. public/에 GIF를 추가하세요.',
+    placeholderHint: '녹화본 준비 중. public/에 MP4를 추가하세요.',
     analyzeTabs: [
       {
         label: '지원',
-        src: `${DEMO_BASE}/analyze-apply.gif`,
+        src: `${DEMO_BASE}/analyze-apply.mp4`,
         caption: 'APPLY 판정과 선택된 이력서 버전.',
       },
       {
         label: '주의하며 지원',
-        src: `${DEMO_BASE}/analyze-caution.gif`,
+        src: `${DEMO_BASE}/analyze-caution.mp4`,
         caption: '지원은 가능하나, 우대 요건 공백이 함께 표시됩니다.',
       },
       {
         label: '검토 필요',
-        src: `${DEMO_BASE}/analyze-needs-review.gif`,
+        src: `${DEMO_BASE}/analyze-needs-review.mp4`,
         caption:
           '필수 사실이 미확정입니다. hub에 Yes/No를 기록한 뒤 Analyze를 다시 실행합니다.',
       },
       {
         label: '지원하지 않음',
-        src: `${DEMO_BASE}/analyze-do-not-apply.gif`,
+        src: `${DEMO_BASE}/analyze-do-not-apply.mp4`,
         caption: '지원 가능 여부 판정 실패. 이력서 버전을 추천하지 않습니다.',
       },
     ],
     autofillTabs: [
       {
         label: '경력·학력',
-        src: `${DEMO_BASE}/autofill-experience.gif`,
+        src: `${DEMO_BASE}/autofill-experience.mp4`,
         caption:
           'hub의 경력·학력을 채웁니다. Phenom에서는 Role description도 채웁니다.',
       },
       {
         label: '기본 정보',
-        src: `${DEMO_BASE}/autofill-profile.gif`,
+        src: `${DEMO_BASE}/autofill-profile.mp4`,
         caption:
           '연락처와 근무 허가 관련 필드를 채웁니다. 입사 가능일/시작일은 비워 둡니다.',
       },
       {
         label: '자발적 정보',
-        src: `${DEMO_BASE}/autofill-voluntary.gif`,
+        src: `${DEMO_BASE}/autofill-voluntary.mp4`,
         caption:
           '성별, Gender Identity, ethnicity, 동의 항목. 제출은 사용자가 수행합니다.',
       },
@@ -120,7 +120,11 @@ const COPY: Record<
   },
 }
 
-function GifSlot({
+function isVideoSrc(src: string) {
+  return /\.(mp4|webm|ogg)(\?|$)/i.test(src)
+}
+
+function DemoMediaSlot({
   tab,
   placeholderHint,
 }: {
@@ -133,25 +137,40 @@ function GifSlot({
     setFailed(false)
   }, [tab.src])
 
-  const showImage = Boolean(tab.src) && !failed
+  const showMedia = Boolean(tab.src) && !failed
+  const mediaStyle = { aspectRatio: '16 / 9', minHeight: '320px' } as const
 
   return (
     <figure className="w-full">
-      <div className="w-full overflow-hidden border border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
-        {showImage ? (
+      <div className="w-full overflow-hidden border border-t-0 border-neutral-200 bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-950">
+        {showMedia && isVideoSrc(tab.src) ? (
+          <video
+            key={tab.src}
+            src={tab.src}
+            title={tab.label}
+            className="block w-full object-cover"
+            style={mediaStyle}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            onError={() => setFailed(true)}
+          />
+        ) : showMedia ? (
           <img
             key={tab.src}
             src={tab.src}
             alt={tab.label}
             className="block w-full object-cover"
-            style={{ aspectRatio: '16 / 9', minHeight: '320px' }}
+            style={mediaStyle}
             loading="lazy"
             onError={() => setFailed(true)}
           />
         ) : (
           <div
             className="flex flex-col items-center justify-center gap-2 px-6 text-center text-sm text-neutral-500 dark:text-neutral-400"
-            style={{ aspectRatio: '16 / 9', minHeight: '320px' }}
+            style={mediaStyle}
           >
             <span className="font-medium text-neutral-700 dark:text-neutral-300">
               {tab.label}
@@ -172,7 +191,7 @@ function GifSlot({
   )
 }
 
-function TabbedGifSection({
+function TabbedDemoSection({
   title,
   tabs,
   placeholderHint,
@@ -196,7 +215,7 @@ function TabbedGifSection({
       <div
         role="tablist"
         aria-label={title}
-        className="flex flex-wrap gap-x-5 gap-y-2 border-b border-neutral-200 dark:border-neutral-800"
+        className="relative flex flex-wrap items-end gap-1 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:border-b after:border-neutral-200 dark:after:border-neutral-800"
       >
         {list.map((tab, index) => {
           const selected = index === safeIndex
@@ -209,8 +228,8 @@ function TabbedGifSection({
               id={`${title}-tab-${index}`}
               className={
                 selected
-                  ? 'relative -mb-px border-b-2 border-neutral-900 pb-2 text-sm font-medium text-neutral-900 dark:border-neutral-100 dark:text-neutral-100'
-                  : 'pb-2 text-sm text-neutral-500 transition-colors hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'
+                  ? 'relative z-10 -mb-px rounded-t-md border border-neutral-200 border-b-neutral-50 bg-neutral-50 px-3 py-2 text-sm font-medium text-neutral-900 dark:border-neutral-800 dark:border-b-neutral-950 dark:bg-neutral-950 dark:text-neutral-100'
+                  : 'relative z-0 rounded-t-md border border-b-0 border-neutral-200 bg-neutral-100/80 px-3 py-2 text-sm text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-800 dark:border-neutral-800 dark:bg-neutral-900/80 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-neutral-200'
               }
               onClick={() => setActive(index)}
             >
@@ -222,9 +241,9 @@ function TabbedGifSection({
       <div
         role="tabpanel"
         aria-labelledby={`${title}-tab-${safeIndex}`}
-        className="mt-4"
+        className="mt-0"
       >
-        <GifSlot tab={current} placeholderHint={placeholderHint} />
+        <DemoMediaSlot tab={current} placeholderHint={placeholderHint} />
       </div>
     </section>
   )
@@ -235,12 +254,12 @@ export function DemoGifSections({ locale = 'en' }: { locale?: Locale }) {
 
   return (
     <div className="not-prose w-full">
-      <TabbedGifSection
+      <TabbedDemoSection
         title={copy.analyzeTitle}
         tabs={copy.analyzeTabs}
         placeholderHint={copy.placeholderHint}
       />
-      <TabbedGifSection
+      <TabbedDemoSection
         title={copy.autofillTitle}
         tabs={copy.autofillTabs}
         placeholderHint={copy.placeholderHint}
