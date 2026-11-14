@@ -12,26 +12,25 @@ export default async function Page() {
   const t = getDictionary(locale)
 
   return (
-    <section>
-      <h1 className="mb-2 text-3xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
-        Yoon Lee
-      </h1>
-      <p className="mb-6 text-neutral-600 dark:text-neutral-400">{t.home.role}</p>
-      <p className="mb-4 leading-7 text-neutral-800 dark:text-neutral-200">
-        {t.home.intro}
-      </p>
-      <p className="mb-10 leading-7 text-neutral-800 dark:text-neutral-200">
-        {t.home.projectsLead}
-      </p>
+    <section className="flex flex-col">
+      <header className="mb-14 max-w-[68ch]">
+        <h1 className="mb-1 text-balance text-3xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
+          Yoon Lee
+        </h1>
+        <p className="mb-4 text-neutral-600 dark:text-neutral-400">{t.home.role}</p>
+        <p className="leading-7 text-neutral-800 dark:text-neutral-200">
+          {t.home.intro}
+        </p>
+      </header>
 
       <section
         id="experience"
         aria-labelledby="experience-heading"
-        className="mb-14"
+        className="mb-16"
       >
         <h2
           id="experience-heading"
-          className="mb-6 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
+          className="mb-4 text-balance text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
         >
           {t.home.experienceHeading}
         </h2>
@@ -41,25 +40,28 @@ export default async function Page() {
       <section
         id="projects"
         aria-labelledby="projects-heading"
-        className="mb-14"
+        className="mb-16"
       >
         <h2
           id="projects-heading"
-          className="mb-6 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
+          className="mb-3 text-balance text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
         >
           {t.home.projectsHeading}
         </h2>
+        <p className="mb-6 max-w-[68ch] leading-7 text-neutral-800 dark:text-neutral-200">
+          {t.home.projectsLead}
+        </p>
         <BlogPosts locale={locale} />
       </section>
 
       <section
         id="certifications"
         aria-labelledby="certifications-heading"
-        className="mb-14"
+        className="mb-12"
       >
         <h2
           id="certifications-heading"
-          className="mb-6 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
+          className="mb-4 text-balance text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
         >
           {t.home.certificationsHeading}
         </h2>
@@ -69,7 +71,7 @@ export default async function Page() {
       <section id="education" aria-labelledby="education-heading">
         <h2
           id="education-heading"
-          className="mb-6 text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
+          className="mb-4 text-balance text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100"
         >
           {t.home.educationHeading}
         </h2>

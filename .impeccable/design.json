@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-14T23:00:00Z",
+  "title": "Design System: Yoon Lee",
+  "extensions": {
+    "colorMeta": {
+      "neutral-50": {
+        "role": "neutral",
+        "displayName": "Cool Paper",
+        "canonical": "#fafafa",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#525252", "#a3a3a3", "#e5e5e5", "#f5f5f5", "#fafafa"]
+      },
+      "neutral-100": {
+        "role": "neutral",
+        "displayName": "Raised Paper",
+        "canonical": "#f5f5f5",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#525252", "#a3a3a3", "#e5e5e5", "#f5f5f5", "#fafafa"]
+      },
+      "neutral-200": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#e5e5e5",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#525252", "#a3a3a3", "#e5e5e5", "#f5f5f5", "#fafafa"]
+      },
+      "neutral-300": {
+        "role": "neutral",
+        "displayName": "Selection Gray",
+        "canonical": "#d4d4d4",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#525252", "#a3a3a3", "#d4d4d4", "#f5f5f5", "#fafafa"]
+      },
+      "neutral-400": {
+        "role": "neutral",
+        "displayName": "Quiet Gray",
+        "canonical": "#a3a3a3",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#525252", "#a3a3a3", "#e5e5e5", "#f5f5f5", "#fafafa"]
+      },
+      "neutral-500": {
+        "role": "neutral",
+        "displayName": "Caption",
+        "canonical": "#737373",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#525252", "#737373", "#a3a3a3", "#e5e5e5", "#fafafa"]
+      },
+      "neutral-600": {
+        "role": "neutral",
+        "displayName": "Support Ink",
+        "canonical": "#525252",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#525252", "#737373", "#a3a3a3", "#e5e5e5", "#fafafa"]
+      },
+      "neutral-700": {
+        "role": "neutral",
+        "displayName": "Dark Selection",
+        "canonical": "#404040",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#404040", "#737373", "#a3a3a3", "#e5e5e5", "#fafafa"]
+      },
+      "neutral-800": {
+        "role": "neutral",
+        "displayName": "Body Ink",
+        "canonical": "#262626",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#525252", "#737373", "#a3a3a3", "#e5e5e5", "#fafafa"]
+      },
+      "neutral-900": {
+        "role": "neutral",
+        "displayName": "Carbon Ink",
+        "canonical": "#171717",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#525252", "#737373", "#a3a3a3", "#e5e5e5", "#fafafa"]
+      },
+      "neutral-950": {
+        "role": "neutral",
+        "displayName": "Night Paper",
+        "canonical": "#0a0a0a",
+        "tonalRamp": ["#0a0a0a", "#171717", "#262626", "#525252", "#737373", "#a3a3a3", "#e5e5e5", "#fafafa"]
+      },
+      "code-keyword": {
+        "role": "primary",
+        "displayName": "Code Keyword",
+        "canonical": "#e02518",
+        "tonalRamp": ["#3f0a07", "#7a1610", "#e02518", "#f47067", "#f8b4ae", "#fcd5d2", "#fee8e6", "#fff5f4"]
+      },
+      "code-string": {
+        "role": "secondary",
+        "displayName": "Code String",
+        "canonical": "#007f7a",
+        "tonalRamp": ["#042826", "#085550", "#007f7a", "#0fa295", "#7dccc6", "#c6ebe8", "#e7f7f6", "#f4fbfb"]
+      },
+      "code-class": {
+        "role": "tertiary",
+        "displayName": "Code Class",
+        "canonical": "#2d5e9d",
+        "tonalRamp": ["#0e1c30", "#1c3d68", "#2d5e9d", "#4c97f8", "#9ec4fb", "#d3e4fd", "#eaf2fe", "#f5f9ff"]
+      }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The name on the home page." },
+      "headline": { "displayName": "Headline", "purpose": "Home section headings." },
+      "title": { "displayName": "Title", "purpose": "Case-study section headings." },
+      "body": { "displayName": "Body", "purpose": "The introduction and case-study prose." },
+      "label": { "displayName": "Label", "purpose": "Dates, captions, and demo tabs." },
+      "mono": { "displayName": "Mono", "purpose": "Code only." }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "page-min", "value": "360px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Text button",
+      "kind": "button",
+      "refersTo": "text-button",
+      "description": "Language control. Words only, no fill.",
+      "html": "<div class=\"ds-lang\"><button class=\"ds-text-btn is-active\" type=\"button\">EN</button><span class=\"ds-slash\">/</span><button class=\"ds-text-btn\" type=\"button\">KO</button></div>",
+      "css": ".ds-lang { display: inline-flex; align-items: center; gap: 0.25rem; font-family: \"IBM Plex Sans KR\", ui-sans-serif, system-ui, sans-serif; font-size: 0.875rem; line-height: 1.25rem; } .ds-text-btn { background: transparent; border: 0; padding: 0.25rem 0.125rem; color: #525252; font: inherit; cursor: pointer; } .ds-text-btn:hover { color: #262626; } .ds-text-btn.is-active { color: #171717; font-weight: 500; } .ds-text-btn:focus-visible { outline: 1px solid #171717; outline-offset: 2px; } .ds-slash { color: #a3a3a3; }"
+    },
+    {
+      "name": "Nav link",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "Section link in the memo nav.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-nav-link\" href=\"#experience\">experience</a><a class=\"ds-nav-link\" href=\"#projects\">projects</a></nav>",
+      "css": ".ds-nav { display: flex; gap: 0.25rem; font-family: \"IBM Plex Sans KR\", ui-sans-serif, system-ui, sans-serif; } .ds-nav-link { color: #525252; text-decoration: none; padding: 0.25rem 0.5rem; font-size: 1rem; line-height: 1.75rem; } .ds-nav-link:hover { color: #262626; } .ds-nav-link:focus-visible { outline: 1px solid #171717; outline-offset: 2px; }"
+    },
+    {
+      "name": "Demo tab",
+      "kind": "chip",
+      "refersTo": "tab-selected",
+      "description": "Folder tab for a demo recording. Selected tab opens into the panel.",
+      "html": "<div class=\"ds-tabs\"><button class=\"ds-tab is-selected\" type=\"button\">APPLY</button><button class=\"ds-tab\" type=\"button\">NEEDS REVIEW</button></div>",
+      "css": ".ds-tabs { display: flex; align-items: flex-end; gap: 0.25rem; font-family: \"IBM Plex Sans KR\", ui-sans-serif, system-ui, sans-serif; } .ds-tab { border: 1px solid #e5e5e5; border-bottom: 0; border-radius: 0.375rem 0.375rem 0 0; background: #f5f5f5; color: #737373; padding: 0.5rem 0.75rem; font-size: 0.875rem; line-height: 1.25rem; cursor: pointer; } .ds-tab:hover { color: #262626; background: #f5f5f5; } .ds-tab.is-selected { background: #fafafa; color: #171717; font-weight: 500; border-color: #e5e5e5; } .ds-tab:focus-visible { outline: 1px solid #171717; outline-offset: 2px; }"
+    },
+    {
+      "name": "Prose link",
+      "kind": "custom",
+      "refersTo": "nav-link",
+      "description": "Underlined link inside case-study prose.",
+      "html": "<p class=\"ds-prose\">Read the <a class=\"ds-prose-link\" href=\"#\">case notes</a>.</p>",
+      "css": ".ds-prose { font-family: \"IBM Plex Sans KR\", ui-sans-serif, system-ui, sans-serif; font-size: 15px; line-height: 1.75rem; color: #262626; } .ds-prose-link { color: inherit; text-decoration-line: underline; text-decoration-color: #a3a3a3; text-underline-offset: 2px; text-decoration-thickness: 0.1em; } .ds-prose-link:hover { text-decoration-color: #525252; } .ds-prose-link:focus-visible { outline: 1px solid #171717; outline-offset: 2px; }"
+    },
+    {
+      "name": "Record row",
+      "kind": "card",
+      "refersTo": "text-button",
+      "description": "One job or project. Date rail, title, then the line. No card.",
+      "html": "<article class=\"ds-record\"><time>2022–Present</time><div><h3>Sneaker Resale Operator <span>· Self-employed</span></h3><p>Run a sneaker resale operation with SKU-level inventory.</p></div></article>",
+      "css": ".ds-record { display: grid; grid-template-columns: 7.5rem 1fr; gap: 0.25rem 0.75rem; font-family: \"IBM Plex Sans KR\", ui-sans-serif, system-ui, sans-serif; } .ds-record time { font-size: 0.875rem; line-height: 1.25rem; color: #737373; font-variant-numeric: tabular-nums; } .ds-record h3 { margin: 0; font-size: 1rem; font-weight: 500; letter-spacing: -0.025em; color: #171717; } .ds-record h3 span { font-weight: 400; color: #525252; } .ds-record p { margin: 0.25rem 0 0; font-size: 0.875rem; line-height: 1.625; color: #525252; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Briefing Note",
+    "overview": "A short hiring memo on cool paper. The page is quiet, precise, and restrained. Evidence comes before decoration. The reader is a hiring manager deciding whether Yoon Lee fits an operations analyst role, in English or Korean, and the interface should get out of the way of that decision.\n\nThe column is narrow, the type is IBM Plex Sans KR, and depth comes from hairlines and a shift in paper tone. There is no brand accent, no shadow, and no chrome competing with the name, the role, and the record. Code is the only place color appears, and it stays inside code.",
+    "keyCharacteristics": [
+      "One reading column, cool gray paper, carbon ink.",
+      "IBM Plex Sans KR for the memo. IBM Plex Mono only for code.",
+      "Flat. Borders and paper shifts carry state. Nothing lifts.",
+      "Text first. Links and controls are words, not filled buttons.",
+      "English and Korean share the same structure."
+    ],
+    "rules": [
+      {
+        "name": "The Paper Rule",
+        "body": "The memo uses this neutral ramp only. Do not introduce a brand accent on the page. Red, teal, and blue belong to syntax highlighting inside pre and code.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "IBM Plex Sans KR is the voice of the memo. IBM Plex Mono appears only in code.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "Surfaces stay flat at rest and on hover. State is weight, underline, or a paper shift. Do not add drop shadows.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep the memo on Cool Paper (#fafafa) and Carbon Ink (#171717) in light mode, and Night Paper (#0a0a0a) in dark mode.",
+      "Do set hierarchy with IBM Plex Sans KR size and weight: 1.875rem/600 for the name, 1.5rem/600 for section headings, 1rem/400 for the introduction.",
+      "Do separate a major section by 3.5rem and keep related lines inside 0.5rem.",
+      "Do show state with weight, underline, or a paper shift."
+    ],
+    "donts": [
+      "Don't add a brand accent, gradient, or drop shadow to the memo.",
+      "Don't use IBM Plex Mono outside code.",
+      "Don't turn jobs, projects, or certificates into equal cards.",
+      "Don't fill a button. Controls stay words."
+    ]
+  }
+}
