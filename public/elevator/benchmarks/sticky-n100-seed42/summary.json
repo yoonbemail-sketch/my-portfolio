@@ -1,6 +1,6 @@
 {
-  "createdAt": "2026-07-28T05:25:00.783Z",
-  "elapsedMs": 214,
+  "createdAt": "2026-11-24T19:21:05.823Z",
+  "elapsedMs": 277,
   "settings": {
     "hallDispatch": "sticky",
     "n": 100,
@@ -24,7 +24,7 @@
       "meanEmpty": 586.01,
       "meanIdleFrac": 0.505876320251333,
       "meanTicks": 545.28,
-      "winRate": 79,
+      "winRate": 56.00000000000001,
       "incomplete": 0
     },
     {
@@ -36,11 +36,23 @@
       "meanEmpty": 642.65,
       "meanIdleFrac": 0.5079125961300417,
       "meanTicks": 545.28,
-      "winRate": 44,
+      "winRate": 30,
       "incomplete": 0
     },
     {
       "rank": 3,
+      "strategy": "optimized",
+      "meanWait": 1.745999999999999,
+      "stdWait": 0.39437682590142237,
+      "meanMaxWait": 13.72,
+      "meanEmpty": 702.8,
+      "meanIdleFrac": 0.533231395342038,
+      "meanTicks": 546.14,
+      "winRate": 33,
+      "incomplete": 0
+    },
+    {
+      "rank": 4,
       "strategy": "spread",
       "meanWait": 3.7878749999999983,
       "stdWait": 0.5017534122877733,
@@ -52,7 +64,7 @@
       "incomplete": 0
     },
     {
-      "rank": 4,
+      "rank": 5,
       "strategy": "mid",
       "meanWait": 4.1667499999999995,
       "stdWait": 0.3558015740563975,
@@ -64,7 +76,7 @@
       "incomplete": 0
     },
     {
-      "rank": 5,
+      "rank": 6,
       "strategy": "stay",
       "meanWait": 6.227375,
       "stdWait": 0.9700139522452782,
@@ -76,6 +88,6 @@
       "incomplete": 0
     }
   ],
-  "overallIdleFrac": 0.5374840265598702,
+  "overallIdleFrac": 0.5367752546902316,
   "overallRegime": "parking-sensitive"
 }
