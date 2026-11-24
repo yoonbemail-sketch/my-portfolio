@@ -7,7 +7,7 @@ English: **[INSIGHTS.md](INSIGHTS.md)**
 
 ## Takeaways (먼저 읽기)
 
-1. **만능 최적 파킹은 없다.** Evening ingress → Batch N=100에서 평균 대기는 **Lobby**가 1위, Stay는 공차는 싸지만 느립니다. Morning egress → **Spread**가 1위(축 커버), Lobby는 꼴찌입니다. 순위는 트래픽에 따라 뒤집힙니다 — [`benchmarks/REGIME.md`](benchmarks/REGIME.md).
+1. **만능 최적 파킹은 없다.** Evening ingress → Batch N=100에서 평균 대기는 **Lobby**가 1위, Stay는 공차는 싸지만 느립니다. Morning egress → 축 커버가 이깁니다: **Optimized**(p-median)가 1위, 베이스라인 중엔 Spread, Lobby는 꼴찌입니다. 순위는 트래픽에 따라 뒤집힙니다 — [`benchmarks/REGIME.md`](benchmarks/REGIME.md).
 2. **파킹은 유휴가 있어야 한다.** **IdleFrac**(IDLE|PARKING car-ticks ÷ ticks×대수, 유휴 비중)를 씁니다. 높으면 parking-sensitive, 아주 낮으면 saturated → 다음 레버는 더 똑똑한 파킹이 아니라 **zoning**입니다. High-arrival Batch(IdleFrac **5%**): Stay−best 대기 격차 **4.63 → 0.90**.
 3. **파킹 ≠ 홀 배정.** Sticky nearest-car는 만차에 먼 호출이 묶인 채 IDLE이 놀 수 있습니다(seed 42, E1이 `#76@16` 보유, E3/E4는 20층 IDLE). **Reassign**은 방치된 호출은 풀지만 근시안이라, Batch N=100에서 Mid 평균 대기가 *나빠졌습니다*(빈 차가 상행 중인 차의 일을 가로챔).
 4. **Policy 설정은 하나만 바꾸고 Batch N=100 before/after.** 산출물은 [`benchmarks/`](benchmarks/). 한 번 Replay로 최적화하지 마세요.
@@ -38,7 +38,7 @@ IdleFrac 레짐 ──► parking-sensitive | mixed | saturated
         │                         │
         ▼                         ▼
 Policy: Parking              Policy: Zoning (문서만)
-  Stay·Lobby·Mid·Spread·Demand
+  Stay·Lobby·Mid·Spread·Demand·Optimized (p-median)
   패널: Policy | Environment | Playback
                                   │
                                   ▼
@@ -64,7 +64,7 @@ Policy: Parking              Policy: Zoning (문서만)
 | 레짐 | IdleFrac | Stay−best avgWait 격차 | avgWait 1위 |
 | --- | ---: | ---: | --- |
 | Evening (arr 15%, target 80) | 54% | 4.63 | Lobby |
-| Morning (arr 15%, target 80) | 50% | 4.16 | Spread |
+| Morning (arr 15%, target 80) | 50% | 4.83 | Optimized (베이스라인 중 Spread) |
 | High arrival (arr 90%, target 200) | **5%** | **0.90** | Mid (거의 동률) |
 
 전체 표: [`benchmarks/REGIME.md`](benchmarks/REGIME.md).
@@ -117,6 +117,41 @@ Reassign은 Stay의 긴 꼬리(max)에 도움이 되고, Mid는 빈 중간층 �
 
 Policy / Environment / Playback 패널은 나중에 zoning을 넣을 자리를 남겨 둡니다.
 
+## 5. Optimized 파킹 (p-median, Gurobi)
+
+`tools/optimize_parking.py`가 gurobipy로 **p-median** 모델을 오프라인에서 풀고, 시뮬레이터는 실행 중 결과(`data/optimized-parking.json`)를 조회만 합니다.
+
+**모델** — 트래픽 시간대, 층수 *F*, 유휴 차량 수 *k*마다:
+
+```text
+w_i   = 다음 호출이 i층에서 발생할 확률          — pickOrigin()과 동일:
+        로비 비중 p (morning .10 / evening .90 / midday .45), 나머지는 2..F 균등
+y_j   ∈ {0,1}  j층에 차량 파킹
+x_ij  ∈ [0,1]  출발층 i를 j층에 파킹한 차량이 담당
+
+min   Σ_i Σ_j  w_i · |i − j| · x_ij          가장 가까운 파킹 차량 → 다음 호출까지 기대 이동 층수
+s.t.  Σ_j x_ij = 1           ∀ i              모든 출발층을 담당
+      x_ij ≤ y_j             ∀ i, j           파킹한 층만 담당 가능
+      Σ_j y_j = k                             유휴 차량 k대
+```
+
+UI 전 설정(시간대 3 × F 8–40 × k 1–8 = MIP 792개, 약 5초)을 풀었고, 전부 정확한 1차원 DP 결과와 일치합니다. 예: F=20, k=4 → morning `[2, 7, 13, 18]`, evening `[1, 6, 11, 17]`, midday `[1, 7, 12, 18]`.
+
+**런타임 규칙:** k = 현재 IDLE|PARKING 차량 수. 차량과 k개 층을 각각 정렬해 순서대로 매칭(직선 위 최소 이동 매칭, 목표 뒤바뀜 없음).
+
+Batch N=100, seeds 42…141, sticky, 20F · 4대 · arrival 15%:
+
+| 시간대 | Optimized avgWait | 최고 베이스라인 | Optimized 순위 |
+| --- | ---: | --- | ---: |
+| Morning | **3.69** | Spread 4.36 | 1 |
+| Midday | **2.74** | Spread 3.18 | 1 |
+| Evening | 1.75 | Lobby 1.60 | 3 (max wait는 최고: 13.7 vs 18.1) |
+| High arrival (90%) | 34.44 | Mid 34.43 | ≈ 동률 (포화) |
+
+Evening에서 지는 이유: p-median은 **다음 한 번의** 호출까지 거리만 최적화합니다. 출발의 90%가 로비면 Lobby는 유휴 차를 모두 L1에 쌓아 *몰려오는 도착*을 흡수하지만, p-median은 로비에 1대만 두고 나머지는 상층 커버리지로 분산합니다 — 꼬리(max)는 좋고 평균은 약간 나쁩니다. 다음 단계는 대기열을 고려한 목적함수(또는 k별 로비 대수 — MDP 방향)입니다. Optimized는 k가 바뀔 때마다 재배치해 빈 운행이 가장 많습니다.
+
+재생성: `npm run optimize` (`.venv/bin/python tools/optimize_parking.py`) — JSON과 `.js` 미러를 함께 써서 `index.html`을 `file://`로 열어도 동작합니다.
+
 ---
 
 ## Limitations (한계)
@@ -138,7 +173,7 @@ Policy / Environment / Playback 패널은 나중에 zoning을 넣을 자리를 �
 OA / 분석 면접용 짧은 답변 골격.
 
 1. **왜 avg wait / max wait / empty travel를 나누나?**  
-   단일 최적 없음 — evening 대기는 Lobby, 공차는 Stay, morning은 Spread. Rank-by로 레짐별 tradeoff를 드러냅니다.
+   단일 최적 없음 — evening 대기는 Lobby, 공차는 Stay, morning은 축 커버(Optimized, 다음 Spread). Rank-by로 레짐별 tradeoff를 드러냅니다.
 
 2. **reassign에서 Mid 평균 대기가 나빠진 이유?**  
    근시안적인 유휴 가로채기: 빈 중간층 차가 상행 차가 en-route로 처리할 호출을 가로챕니다. Evening N=100: Mid 4.17 → **5.02** ([COMPARE](benchmarks/COMPARE.md)). Stay max는 방치된 호출 해소로 개선됩니다.

@@ -27,6 +27,7 @@ Where should idle elevators wait in an **apartment** bank? Parking placement is 
 | Mid | Mid-building |
 | Spread | Even homes along the shaft |
 | Demand | Recent call-heat floors |
+| Optimized | p-median floors for the period and idle-car count (Gurobi) |
 
 ## Approach
 
@@ -44,10 +45,10 @@ Evening default vs morning vs saturated high-arrival ([REGIME](/elevator/benchma
 | Regime | IdleFrac | 1st by avgWait | Stay−best gap |
 | --- | ---: | --- | ---: |
 | Evening (arr 15%, target 80) | 54% | **Lobby** 1.60 | 4.63 |
-| Morning (arr 15%, target 80) | 50% | **Spread** 4.36 | 4.16 |
+| Morning (arr 15%, target 80) | 50% | **Optimized** 3.69 (best baseline Spread 4.36) | 4.83 |
 | High arrival (arr 90%, target 200) | **5%** | Mid ≈ pack ~34–35 | **0.90** |
 
-Pick parking by regime (Lobby for evening ingress; Spread for morning egress). When IdleFrac is saturated, stop tuning parking — next lever is **zoning** (documented, not coded). Do not ship a “global best” from one Replay. Parking needs idle time; parking policy is not the same as hall dispatch.
+Pick parking by regime (Lobby for evening ingress; Optimized p-median or Spread for morning egress). When IdleFrac is saturated, stop tuning parking — next lever is **zoning** (documented, not coded). Do not ship a “global best” from one Replay. Parking needs idle time; parking policy is not the same as hall dispatch.
 
 ## Limitations
 
@@ -64,7 +65,7 @@ Vanilla HTML · CSS · JavaScript · `/elevator/`
 
 **Takeaways**
 
-1. No universal best parking policy — evening Lobby, morning Spread; gaps collapse when saturated
+1. No universal best parking policy — evening Lobby, morning Optimized (p-median) then Spread; gaps collapse when saturated
 2. IdleFrac diagnoses parking-sensitive vs saturated regimes
 3. Sticky orphans vs reassign thrash (Mid worse on N=100 sticky vs reassign A/B)
 4. Re-run Batch N=100 before/after one Policy change

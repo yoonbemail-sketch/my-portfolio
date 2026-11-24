@@ -6,9 +6,12 @@ Default evening Environment (arrival 15%, interfloor 10%, 20F / 4 / cap 8 / dwel
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Lobby | 1.60 | 1.66 | +0.06 | 18.1 | 16.6 |
 | Demand | 1.64 | 1.67 | +0.03 | 18.0 | 16.2 |
+| Optimized | 1.75 | 1.76 | +0.01 | 13.7 | 12.8 |
 | Spread | 3.79 | 3.84 | +0.05 | 21.0 | 17.0 |
 | Mid | 4.17 | 5.02 | +0.85 | 12.8 | 17.1 |
 | Stay | 6.23 | 6.04 | −0.19 | 29.5 | 24.3 |
+
+Optimized (p-median, [INSIGHTS §5](../INSIGHTS.md#5-optimized-parking-p-median-gurobi)) has the lowest evening max wait under both dispatch rules.
 
 Folders: `sticky-n100-seed42/` · `reassign-n100-seed42/`  
 Reproduce: `npm run batch:sticky` · `npm run batch:reassign`

@@ -27,6 +27,7 @@ summary: '아파트 엘리베이터 대기 위치 전략을 고정 시나리오�
 | Mid | 중간층 |
 | Spread | 축을 따라 균등 배치 |
 | Demand | 최근 호출이 몰린 층 |
+| Optimized | 시간대·유휴 차 수별 p-median 층 (Gurobi) |
 
 ## Approach
 
@@ -44,10 +45,10 @@ Evening 기본 vs morning vs 포화 high-arrival ([REGIME](/elevator/benchmarks/
 | 레짐 | IdleFrac | avgWait 1위 | Stay−best 격차 |
 | --- | ---: | --- | ---: |
 | Evening (arr 15%, target 80) | 54% | **Lobby** 1.60 | 4.63 |
-| Morning (arr 15%, target 80) | 50% | **Spread** 4.36 | 4.16 |
+| Morning (arr 15%, target 80) | 50% | **Optimized** 3.69 (베이스라인 중 Spread 4.36) | 4.83 |
 | High arrival (arr 90%, target 200) | **5%** | Mid ≈ 34–35 동률대 | **0.90** |
 
-레짐별로 고릅니다(저녁 귀가 → Lobby, 아침 외출 → Spread). IdleFrac가 saturated면 파킹 튜닝을 멈추고, 다음 레버는 **zoning**(문서만, 미구현)입니다. Replay 한 번으로 “전역 최적”을 내지 않습니다. 파킹은 유휴가 있어야 하며, 파킹 정책과 홀 배정은 다릅니다.
+레짐별로 고릅니다(저녁 귀가 → Lobby, 아침 외출 → Optimized p-median 또는 Spread). IdleFrac가 saturated면 파킹 튜닝을 멈추고, 다음 레버는 **zoning**(문서만, 미구현)입니다. Replay 한 번으로 “전역 최적”을 내지 않습니다. 파킹은 유휴가 있어야 하며, 파킹 정책과 홀 배정은 다릅니다.
 
 ## Limitations
 
@@ -64,7 +65,7 @@ Vanilla HTML · CSS · JavaScript · `/elevator/`
 
 **Takeaways**
 
-1. 만능 파킹은 없다 — evening은 Lobby, morning은 Spread; 포화되면 격차가 거의 사라집니다
+1. 만능 파킹은 없다 — evening은 Lobby, morning은 Optimized(p-median), 다음 Spread; 포화되면 격차가 거의 사라집니다
 2. IdleFrac로 parking-sensitive와 saturated를 구분합니다
 3. sticky orphans vs reassign thrash (Mid는 N=100 sticky vs reassign A/B에서 악화)
 4. Policy를 하나 바꿀 때마다 Batch N=100 before/after

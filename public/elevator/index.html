@@ -9,7 +9,9 @@
       // resolve to /script.js. document.write(<base>) must run during parse.
       (function () {
         var path = location.pathname.replace(/\/index\.html$/i, '');
-        if (/\/elevator\/?$/.test(path)) {
+        // http(s) only: a local checkout in a folder named "elevator"
+        // (file:///…/elevator/index.html) must keep its own base.
+        if (/^https?:$/.test(location.protocol) && /\/elevator\/?$/.test(path)) {
           document.write('<base href="' + location.origin + '/elevator/">');
         }
       })();
@@ -91,6 +93,7 @@
                             <option value="mid">Mid — building center</option>
                             <option value="spread">Spread — even homes</option>
                             <option value="demand">Demand — hot floors</option>
+                            <option value="optimized">Optimized — p-median (Gurobi)</option>
                         </select>
                     </div>
                     <div class="field">
@@ -263,6 +266,7 @@
             </main>
         </div>
     </div>
+    <script src="data/optimized-parking.js"></script>
     <script src="script.js"></script>
     <div id="hover-tip" class="hover-tip" hidden></div>
 </body>

@@ -4,13 +4,14 @@
  */
 
 const LOBBY = 1;
-const STRATEGIES = ['stay', 'lobby', 'mid', 'spread', 'demand'];
+const STRATEGIES = ['stay', 'lobby', 'mid', 'spread', 'demand', 'optimized'];
 const STRATEGY_LABELS = {
     stay: 'Stay',
     lobby: 'Lobby',
     mid: 'Mid',
     spread: 'Spread',
     demand: 'Demand',
+    optimized: 'Optimized',
 };
 
 /** Environment presets matching benchmarks/REGIME.md Batch evidence */
@@ -203,8 +204,46 @@ function homeFloorFor(index) {
     return clamp(1 + Math.round((index / (elevatorCount - 1)) * span), 1, floors);
 }
 
+/**
+ * Optimized parking: p-median floors precomputed by tools/optimize_parking.py
+ * (data/optimized-parking.json, mirrored to .js so file:// works).
+ * Table lookup: solutions[peakMode][floors][k] → k sorted parking floors.
+ */
+let optimizedDataWarned = false;
+
+function optimizedParkingSlots(k) {
+    const data = globalThis.OPTIMIZED_PARKING_DATA;
+    const byFloors = data && data.solutions && data.solutions[peakMode]
+        ? data.solutions[peakMode][String(floors)]
+        : null;
+    const entry = byFloors ? byFloors[String(Math.min(k, floors))] : null;
+    return entry ? entry.floors : null;
+}
+
+/**
+ * k = cars currently IDLE|PARKING (plus this one). Cars sorted by floor are
+ * matched in order to the sorted optimal floors — the min-total-travel
+ * matching on a line, and stable as cars move (no target swapping).
+ */
+function optimizedParkingFloor(elev) {
+    const idle = elevators.filter(e => e === elev || e.state === 'IDLE' || e.state === 'PARKING');
+    const slots = optimizedParkingSlots(idle.length);
+    if (!slots || !slots.length) {
+        if (!optimizedDataWarned) {
+            optimizedDataWarned = true;
+            console.warn('Optimized parking table missing for this setting — falling back to Spread homes. Run tools/optimize_parking.py.');
+        }
+        return elev.homeFloor;
+    }
+    idle.sort((a, b) => a.floor - b.floor || a.id - b.id);
+    const idx = idle.indexOf(elev);
+    return slots[Math.min(idx, slots.length - 1)];
+}
+
 function parkingFloorFor(elev) {
     switch (parkingStrategy) {
+        case 'optimized':
+            return optimizedParkingFloor(elev);
         case 'lobby':
             return LOBBY;
         case 'mid':
