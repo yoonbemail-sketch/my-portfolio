@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-mode="simple">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,6 +15,16 @@
           document.write('<base href="' + location.origin + '/elevator/">');
         }
       })();
+      // Simple view by default; ?mode=advanced (or a saved choice) shows the full lab.
+      (function () {
+        var m = 'simple';
+        try {
+          var q = new URLSearchParams(location.search).get('mode');
+          var saved = localStorage.getItem('elevator.uiMode');
+          m = (q === 'advanced' || q === 'simple') ? q : (saved === 'advanced' ? 'advanced' : 'simple');
+        } catch (e) { /* storage blocked: keep simple */ }
+        document.documentElement.setAttribute('data-mode', m);
+      })();
     </script>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -22,9 +32,9 @@
     <div class="app">
         <header class="top">
             <div class="brand">
-                <h1>Elevator Parking</h1>
-                <p class="lede">Apartment building — where should idle cars wait?</p>
-                <p class="suggested-path" id="suggested-path">
+                <h1 data-simple="Where should a free elevator wait?">Elevator Parking</h1>
+                <p class="lede" id="lede">Apartment building — where should idle cars wait?</p>
+                <p class="suggested-path adv-only" id="suggested-path">
                     <span class="path-kicker">Try</span>
                     Evening · Stay → Start · then
                     <button type="button" class="path-cta" id="btn-path-compare">Compare all</button>
@@ -36,67 +46,79 @@
             <div class="actions">
                 <button class="btn primary" id="btn-play" type="button">Start</button>
                 <button class="btn" id="btn-pause" type="button" disabled>Pause</button>
-                <button class="btn" id="btn-rewind" type="button" disabled title="Hold to rewind · Shift: −10/tick">Rewind</button>
-                <button class="btn" id="btn-step" type="button" disabled title="Step forward 1 tick">Step</button>
-                <button class="btn" id="btn-reset" type="button">Replay</button>
-                <button class="btn" id="btn-copy-debug" type="button" title="Copy seed, settings, and current sim state">Copy debug</button>
-                <button class="btn" id="btn-compare" type="button">Compare all</button>
-                <button class="btn" id="btn-batch" type="button" title="Monte Carlo over N seeds">Batch</button>
-                <label class="batch-n-label" for="batch-n">N
+                <button class="btn adv-only" id="btn-rewind" type="button" disabled title="Hold to rewind · Shift: −10/tick">Rewind</button>
+                <button class="btn adv-only" id="btn-step" type="button" disabled title="Step forward 1 tick">Step</button>
+                <button class="btn" id="btn-reset" type="button" data-simple="Start over">Replay</button>
+                <button class="btn adv-only" id="btn-copy-debug" type="button" title="Copy seed, settings, and current sim state">Copy debug</button>
+                <button class="btn adv-only" id="btn-compare" type="button">Compare all</button>
+                <button class="btn adv-only" id="btn-batch" type="button" title="Monte Carlo over N seeds">Batch</button>
+                <label class="batch-n-label adv-only" for="batch-n">N
                     <input type="number" id="batch-n" min="1" max="200" value="100" title="Number of seeds">
                 </label>
+                <button class="btn mode-toggle" id="btn-mode" type="button" data-simple="Advanced mode" aria-pressed="false">Simple view</button>
                 <button class="btn ghost mobile-toggle" id="mobile-toggle" type="button" aria-label="Toggle controls" aria-expanded="false" aria-controls="sim-controls">Controls</button>
             </div>
         </header>
 
+        <section class="answer simple-only" id="answer-card" aria-live="polite">
+            <div class="answer-text">
+                <p class="answer-kicker" id="answer-kicker">Evening · most people are coming home</p>
+                <p class="answer-headline" id="answer-headline">Sending free elevators back to the lobby cuts the average wait by 74%.</p>
+                <p class="answer-detail" id="answer-detail">1.6 s vs 6.2 s when they stay where they stopped.</p>
+            </div>
+            <button class="btn primary" id="btn-answer-try" type="button">Watch it</button>
+        </section>
+
         <section class="metrics" aria-label="Metrics">
             <div class="metric">
-                <span class="metric-label">Avg wait (ticks)</span>
+                <span class="metric-label" data-simple="Average wait">Avg wait (ticks)</span>
                 <span class="metric-value" id="stat-avg-wait">0</span>
             </div>
             <div class="metric">
-                <span class="metric-label">Max wait (ticks)</span>
+                <span class="metric-label" data-simple="Longest wait">Max wait (ticks)</span>
                 <span class="metric-value" id="stat-max-wait">0</span>
             </div>
             <div class="metric metric-wide">
-                <span class="metric-label">Completed</span>
+                <span class="metric-label" data-simple="People delivered">Completed</span>
                 <span class="metric-value" id="stat-completed">0 / 80</span>
                 <div class="progress" aria-hidden="true">
                     <div class="progress-fill" id="progress-fill"></div>
                 </div>
             </div>
             <div class="metric">
-                <span class="metric-label">Empty travel (floors)</span>
+                <span class="metric-label" data-simple="Empty trips (floors)">Empty travel (floors)</span>
                 <span class="metric-value" id="stat-empty">0</span>
             </div>
-            <div class="metric metric-idle" title="IdleFrac = IDLE|PARKING car-ticks ÷ (ticks × elevators). Diagnostic only — ranking uses wait.">
+            <div class="metric metric-idle adv-only" title="IdleFrac = IDLE|PARKING car-ticks ÷ (ticks × elevators). Diagnostic only — ranking uses wait.">
                 <span class="metric-label">Idle %</span>
                 <span class="metric-value" id="stat-idle-frac">0%</span>
                 <span class="regime-chip" id="stat-regime" data-regime="mixed" title="≥25% parking-sensitive · &lt;10% saturated · else mixed">mixed</span>
             </div>
-            <div class="metric">
+            <div class="metric adv-only">
                 <span class="metric-label">Ticks</span>
                 <span class="metric-value" id="stat-ticks">0</span>
             </div>
         </section>
+        <p class="hint metrics-note simple-only">Times are simulated seconds (an elevator moves one floor per second). Empty trips count floors an elevator moved with nobody inside.</p>
 
         <div class="layout">
             <aside class="controls" id="sim-controls">
                 <fieldset class="panel-section">
-                    <legend>Policy</legend>
-                    <p class="hint panel-hint">Parking + hall dispatch. Zoning can sit here later.</p>
+                    <legend data-simple="Your choice">Policy</legend>
+                    <p class="hint panel-hint adv-only">Parking + hall dispatch. Zoning can sit here later.</p>
             <div class="field">
-                        <label for="strategy-select">Parking strategy</label>
+                        <label for="strategy-select" data-simple="Where free elevators wait">Parking strategy</label>
                         <select id="strategy-select">
-                            <option value="stay">Stay — last floor</option>
-                            <option value="lobby">Lobby — return to 1</option>
-                            <option value="mid">Mid — building center</option>
-                            <option value="spread">Spread — even homes</option>
-                            <option value="demand">Demand — hot floors</option>
-                            <option value="optimized">Optimized — p-median (Gurobi)</option>
+                            <option value="stay" data-simple="Stay where it stopped">Stay — last floor</option>
+                            <option value="lobby" data-simple="Go back to the lobby">Lobby — return to 1</option>
+                            <option value="mid" data-simple="Wait in the middle">Mid — building center</option>
+                            <option value="spread" data-simple="Spread out evenly">Spread — even homes</option>
+                            <option value="demand" data-simple="Follow recent calls">Demand — hot floors</option>
+                            <option value="optimized" data-simple="Smart spots (optimized)">Optimized — p-median (Gurobi)</option>
                         </select>
+                        <p class="hint simple-only" id="strategy-desc"></p>
                     </div>
-                    <div class="field">
+                    <div class="field adv-only">
                         <label for="dispatch-select">Hall dispatch</label>
                         <select id="dispatch-select">
                             <option value="sticky">Sticky — assign once</option>
@@ -107,17 +129,18 @@
                 </fieldset>
 
                 <fieldset class="panel-section">
-                    <legend>Environment</legend>
+                    <legend data-simple="Building">Environment</legend>
                     <div class="field">
-                        <span class="field-label" id="regime-preset-label">Regime preset</span>
+                        <span class="field-label" id="regime-preset-label" data-simple="Time of day">Regime preset</span>
                         <div class="regime-presets" role="group" aria-labelledby="regime-preset-label">
-                            <button type="button" class="regime-preset is-active" data-preset="evening" title="Evening ingress · arrival 15% · target 80">Evening</button>
-                            <button type="button" class="regime-preset" data-preset="morning" title="Morning egress · arrival 15% · target 80">Morning</button>
-                            <button type="button" class="regime-preset" data-preset="higharrival" title="Evening · arrival 90% · target 200 (saturated)">High arrival</button>
+                            <button type="button" class="regime-preset is-active" data-preset="evening" title="Evening ingress · arrival 15% · target 80" data-simple="Evening · coming home">Evening</button>
+                            <button type="button" class="regime-preset" data-preset="morning" title="Morning egress · arrival 15% · target 80" data-simple="Morning · leaving">Morning</button>
+                            <button type="button" class="regime-preset" data-preset="midday" title="Midday / off-peak · arrival 15% · target 80" data-simple="Midday · mixed">Midday</button>
+                            <button type="button" class="regime-preset adv-only" data-preset="higharrival" title="Evening · arrival 90% · target 200 (saturated)">High arrival</button>
                         </div>
-                        <p class="hint">Matches Batch evidence in <code>benchmarks/REGIME.md</code>.</p>
+                        <p class="hint adv-only">Matches Batch evidence in <code>benchmarks/REGIME.md</code>.</p>
                     </div>
-                    <div class="field scenario-field">
+                    <div class="field scenario-field adv-only">
                         <label for="seed-input">Scenario seed</label>
                         <div class="seed-row">
                             <input type="number" id="seed-input" min="1" max="999999" value="42">
@@ -125,7 +148,7 @@
                         </div>
                         <p class="hint" id="scenario-label">Scenario seed 42</p>
                     </div>
-                    <div class="field">
+                    <div class="field adv-only">
                         <label for="peak-select">Traffic period</label>
                         <select id="peak-select">
                             <option value="morning">Morning egress (upper → lobby)</option>
@@ -134,33 +157,33 @@
                         </select>
                         <p class="hint">Where trips start: morning ~90% from upper floors, evening ~90% from lobby, midday mixed.</p>
                     </div>
-                    <div class="field">
+                    <div class="field adv-only">
                         <label for="interfloor-range">Interfloor trips <span id="interfloor-val">10%</span></label>
                         <input type="range" id="interfloor-range" min="0" max="40" value="10">
                         <p class="hint">If starting upstairs, chance of going to another upper floor instead of the lobby.</p>
                     </div>
-                    <div class="field">
+                    <div class="field adv-only">
                         <label for="dwell-range">Door dwell (ticks) <span id="dwell-val">2</span></label>
                         <input type="range" id="dwell-range" min="1" max="6" value="2">
                     </div>
-                    <div class="field">
+                    <div class="field adv-only">
                         <label for="floors-range">Floors <span id="floors-val">20</span></label>
                         <input type="range" id="floors-range" min="8" max="40" value="20">
                     </div>
-                    <div class="field">
+                    <div class="field adv-only">
                         <label for="elevators-range">Elevators <span id="elevators-val">4</span></label>
                         <input type="range" id="elevators-range" min="1" max="8" value="4">
                     </div>
-                    <div class="field">
+                    <div class="field adv-only">
                         <label for="capacity-range">Capacity <span id="capacity-val">8</span></label>
                         <input type="range" id="capacity-range" min="4" max="16" value="8">
                     </div>
-                    <div class="field">
+                    <div class="field adv-only">
                         <label for="arrival-range">Arrival rate <span id="arrival-val">15%</span></label>
                         <input type="range" id="arrival-range" min="5" max="90" value="15">
                         <p class="hint">Per-tick chance a passenger appears (Bernoulli; ≤1 per tick). 15% ≈ one every ~7 ticks; High arrival preset uses 90%.</p>
                     </div>
-                    <div class="field">
+                    <div class="field adv-only">
                         <label for="target-range">Target passengers <span id="target-val">80</span></label>
                         <input type="range" id="target-range" min="20" max="200" value="80" step="10">
                     </div>
@@ -180,16 +203,16 @@
                     <div class="building" id="building"></div>
                 </div>
                 <ul class="legend">
-                    <li><i class="swatch alighted"></i>Out (alighted)</li>
-                    <li><i class="swatch waiting"></i>Hall (waiting)</li>
-                    <li><i class="swatch riding"></i>Riding</li>
-                    <li><i class="swatch idle"></i>Idle</li>
-                    <li><i class="swatch serving"></i>Serving</li>
-                    <li><i class="swatch parking"></i>Parking</li>
-                    <li><i class="swatch doors"></i>Doors</li>
-                    <li><i class="swatch full"></i>Full (at capacity)</li>
+                    <li><i class="swatch alighted"></i><span data-simple="Arrived">Out (alighted)</span></li>
+                    <li><i class="swatch waiting"></i><span data-simple="Waiting">Hall (waiting)</span></li>
+                    <li><i class="swatch riding"></i><span data-simple="Riding">Riding</span></li>
+                    <li><i class="swatch idle"></i><span data-simple="Free">Idle</span></li>
+                    <li><i class="swatch serving"></i><span data-simple="Busy">Serving</span></li>
+                    <li><i class="swatch parking"></i><span data-simple="Moving to its waiting spot">Parking</span></li>
+                    <li><i class="swatch doors"></i><span data-simple="Doors open">Doors</span></li>
+                    <li><i class="swatch full"></i><span data-simple="Full">Full (at capacity)</span></li>
                 </ul>
-                <section class="compare-panel" id="compare-panel" hidden>
+                <section class="compare-panel adv-only" id="compare-panel" hidden>
                     <div class="compare-head">
                         <div>
                             <h2>Same scenario · strategy comparison</h2>
@@ -215,7 +238,7 @@
                         </table>
                     </div>
                 </section>
-                <section class="compare-panel batch-panel" id="batch-panel" hidden>
+                <section class="compare-panel batch-panel adv-only" id="batch-panel" hidden>
                     <div class="batch-top">
                         <div class="batch-title-block">
                             <p class="batch-kicker">Monte Carlo</p>

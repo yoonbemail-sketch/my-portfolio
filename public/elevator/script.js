@@ -28,12 +28,52 @@ const REGIME_PRESETS = {
         targetPassengers: 80,
         interfloorRate: 0.10,
     },
+    midday: {
+        peakMode: 'midday',
+        arrivalRate: 0.15,
+        targetPassengers: 80,
+        interfloorRate: 0.10,
+    },
     higharrival: {
         peakMode: 'evening',
         arrivalRate: 0.90,
         targetPassengers: 200,
         interfloorRate: 0.10,
     },
+};
+
+/* ---------- Simple view (default) vs advanced lab ---------- */
+
+const UI_MODE_KEY = 'elevator.uiMode';
+const SIMPLE_PRESETS = ['evening', 'morning', 'midday'];
+
+/** Plain-language strategy descriptions shown under the picker in simple view */
+const STRATEGY_SIMPLE_DESC = {
+    stay: 'Free elevators don’t move. No wasted trips, but they are often far from the next person.',
+    lobby: 'Every free elevator returns to the ground floor. Great when most people arrive from outside.',
+    mid: 'Free elevators wait halfway up, so no floor is ever too far away.',
+    spread: 'Each elevator has its own home floor, spaced evenly up the building.',
+    demand: 'Free elevators head toward floors where people called recently.',
+    optimized: 'A math model picks the spots closest to where the next person is likely to be, for this time of day and number of free elevators.',
+};
+
+/** How the answer card names the winning strategy */
+const STRATEGY_ANSWER_PHRASE = {
+    lobby: 'Sending free elevators back to the lobby',
+    optimized: 'Parking free elevators at smart spots',
+    spread: 'Spreading free elevators out evenly',
+    mid: 'Keeping free elevators in the middle',
+    demand: 'Following recent calls',
+};
+
+/**
+ * Answer card numbers: Batch N=100, seeds 42…141, sticky, 20F · 4 cars · arrival 15% · target 80.
+ * Sources: benchmarks/sticky-n100-seed42 (evening), morning-n100-seed42, midday-n100-seed42.
+ */
+const SIMPLE_ANSWERS = {
+    evening: { kicker: 'Evening · most people are coming home', best: 'lobby', bestWait: 1.60, stayWait: 6.23 },
+    morning: { kicker: 'Morning · most people are heading out', best: 'optimized', bestWait: 3.69, stayWait: 8.52 },
+    midday: { kicker: 'Midday · a mix of both', best: 'optimized', bestWait: 2.74, stayWait: 3.76 },
 };
 
 let floors = 20;
@@ -599,7 +639,9 @@ function initBuildingDOM() {
 
     const alightedH = document.createElement('div');
     alightedH.className = 'alighted-header';
-    alightedH.textContent = 'Out';
+    alightedH.dataset.simple = 'Arrived';
+    alightedH.dataset.adv = 'Out';
+    alightedH.textContent = isSimpleMode() ? 'Arrived' : 'Out';
     buildingEl.appendChild(alightedH);
 
     const corner = document.createElement('div');
@@ -616,7 +658,9 @@ function initBuildingDOM() {
 
     const hallH = document.createElement('div');
     hallH.className = 'hall-header';
-    hallH.textContent = 'Hall';
+    hallH.dataset.simple = 'Waiting';
+    hallH.dataset.adv = 'Hall';
+    hallH.textContent = isSimpleMode() ? 'Waiting' : 'Hall';
     buildingEl.appendChild(hallH);
 
     for (let f = floors; f >= 1; f--) {
@@ -890,7 +934,7 @@ function syncControlLabels() {
         ['interfloor-range', 'interfloor-val', v => `${v}%`],
         ['dwell-range', 'dwell-val', v => v],
         ['target-range', 'target-val', v => v],
-        ['sim-speed', 'sim-speed-val', v => `${v} TPS`],
+        ['sim-speed', 'sim-speed-val', speedText],
     ];
     for (const [id, valId, fmt] of pairs) {
         const el = document.getElementById(id);
@@ -945,8 +989,9 @@ function snapshotMetrics() {
 
 function updateDashboard() {
     const m = snapshotMetrics();
-    document.getElementById('stat-avg-wait').textContent = m.avgWait ? m.avgWait.toFixed(1) : '0';
-    document.getElementById('stat-max-wait').textContent = String(m.maxWait);
+    const unit = isSimpleMode() ? ' s' : '';
+    document.getElementById('stat-avg-wait').textContent = (m.avgWait ? m.avgWait.toFixed(1) : '0') + unit;
+    document.getElementById('stat-max-wait').textContent = String(m.maxWait) + unit;
     document.getElementById('stat-completed').textContent = `${m.completed} / ${targetPassengers}`;
     document.getElementById('stat-empty').textContent = String(m.emptyTravel);
     const idleEl = document.getElementById('stat-idle-frac');
@@ -1166,6 +1211,74 @@ async function copyDebugSnapshot() {
     }
 }
 
+let uiMode = 'simple';
+
+function isSimpleMode() {
+    return uiMode === 'simple';
+}
+
+/** Swap text on [data-simple] elements; the advanced text is captured once as data-adv. */
+function applyModeText(root = document) {
+    root.querySelectorAll('[data-simple]').forEach(el => {
+        if (el.dataset.adv == null) el.dataset.adv = el.textContent;
+        el.textContent = isSimpleMode() ? el.dataset.simple : el.dataset.adv;
+    });
+}
+
+function speedText(v) {
+    return isSimpleMode() ? `${v} steps/s` : `${v} TPS`;
+}
+
+function refreshSimpleCopy() {
+    const lede = document.getElementById('lede');
+    if (lede) {
+        if (lede.dataset.adv == null) lede.dataset.adv = lede.textContent;
+        lede.textContent = isSimpleMode()
+            ? `A ${floors}-floor apartment building with ${elevatorCount} elevator${elevatorCount === 1 ? '' : 's'}. ` +
+              'Pick a time of day and where free elevators should wait, then press Start.'
+            : lede.dataset.adv;
+    }
+
+    const desc = document.getElementById('strategy-desc');
+    if (desc) desc.textContent = STRATEGY_SIMPLE_DESC[parkingStrategy] || '';
+
+    const a = SIMPLE_ANSWERS[peakMode] || SIMPLE_ANSWERS.evening;
+    const pct = Math.round((1 - a.bestWait / a.stayWait) * 100);
+    const set = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    };
+    set('answer-kicker', a.kicker);
+    set('answer-headline', `${STRATEGY_ANSWER_PHRASE[a.best]} cuts the average wait by ${pct}%.`);
+    set(
+        'answer-detail',
+        `${a.bestWait.toFixed(1)} s vs ${a.stayWait.toFixed(1)} s when they stay where they stopped, ` +
+        'averaged over 100 simulated runs in a 20-floor building with 4 elevators.'
+    );
+    const tryBtn = document.getElementById('btn-answer-try');
+    if (tryBtn) tryBtn.dataset.strategy = a.best;
+}
+
+function applyUiMode(mode, { persist = true } = {}) {
+    uiMode = mode === 'advanced' ? 'advanced' : 'simple';
+    document.documentElement.setAttribute('data-mode', uiMode);
+    if (persist) {
+        try { localStorage.setItem(UI_MODE_KEY, uiMode); } catch (_) { /* storage blocked */ }
+    }
+    const btn = document.getElementById('btn-mode');
+    if (btn) btn.setAttribute('aria-pressed', uiMode === 'advanced' ? 'true' : 'false');
+
+    // Simple view only offers three times of day; snap other regimes to the matching one.
+    if (isSimpleMode() && !SIMPLE_PRESETS.includes(detectRegimePreset())) {
+        applyRegimePreset(SIMPLE_PRESETS.includes(peakMode) ? peakMode : 'evening');
+    }
+
+    applyModeText();
+    syncControlLabels();
+    refreshSimpleCopy();
+    updateDashboard();
+}
+
 function readControls() {
     floors = Number(document.getElementById('floors-range').value);
     elevatorCount = Number(document.getElementById('elevators-range').value);
@@ -1193,6 +1306,7 @@ function resetSimulation(opts = {}) {
     render();
     updateDashboard();
     updatePlayLabel();
+    refreshSimpleCopy();
     document.getElementById('btn-play').disabled = false;
     document.getElementById('btn-pause').disabled = true;
 }
@@ -1759,7 +1873,7 @@ bindRange('arrival-range', 'arrival-val', v => `${v}%`);
 bindRange('interfloor-range', 'interfloor-val', v => `${v}%`);
 bindRange('dwell-range', 'dwell-val', v => v);
 bindRange('target-range', 'target-val', v => v);
-bindRange('sim-speed', 'sim-speed-val', v => `${v} TPS`);
+bindRange('sim-speed', 'sim-speed-val', speedText);
 
 document.getElementById('btn-play').addEventListener('click', () => {
     const needRebuild =
@@ -1875,6 +1989,20 @@ document.querySelectorAll('.rank-metric-btn').forEach(btn => {
 
 document.getElementById('strategy-select').addEventListener('change', () => {
     parkingStrategy = document.getElementById('strategy-select').value;
+    refreshSimpleCopy();
+});
+
+document.getElementById('btn-mode')?.addEventListener('click', () => {
+    applyUiMode(isSimpleMode() ? 'advanced' : 'simple');
+});
+
+document.getElementById('btn-answer-try')?.addEventListener('click', (e) => {
+    const strategy = e.currentTarget.dataset.strategy;
+    const sel = document.getElementById('strategy-select');
+    if (strategy && sel) sel.value = strategy;
+    resetSimulation({ newScenario: false });
+    startSim();
+    document.getElementById('building')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 });
 
 document.getElementById('peak-select').addEventListener('change', () => {
@@ -2034,3 +2162,4 @@ globalThis.ElevatorSim = {
 
 resetSimulation({ newScenario: true });
 updateRegimePresetButtons();
+applyUiMode(document.documentElement.getAttribute('data-mode'), { persist: false });
