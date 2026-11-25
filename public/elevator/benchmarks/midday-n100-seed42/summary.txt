@@ -1,0 +1,12 @@
+Elevator Parking — batch summary
+N=100 · seeds 42…141 · dispatch sticky · midday · interfloor 10% · dwell 2 · 20F · 4 cars · cap 8 · arrival 15% · target 80
+Idle 48% · parking · Stay−best gap 1.03
+objective: minimize avg wait
+
+Ranked by mean avg wait:
+1. Optimized  avgWait 2.74±0.73  maxWait 26.37  empty 656.0  idle 49%  ticks 547.0  win 65%  incomplete 0
+2. Spread  avgWait 3.18±0.70  maxWait 27.83  empty 540.4  idle 49%  ticks 546.4  win 25%  incomplete 0
+3. Stay  avgWait 3.76±0.82  maxWait 31.10  empty 191.1  idle 49%  ticks 547.9  win 6%  incomplete 0
+4. Mid  avgWait 3.84±0.62  maxWait 24.39  empty 526.7  idle 48%  ticks 549.0  win 4%  incomplete 0
+5. Demand  avgWait 3.85±0.68  maxWait 30.29  empty 609.7  idle 48%  ticks 549.9  win 2%  incomplete 0
+6. Lobby  avgWait 4.44±0.86  maxWait 32.62  empty 416.9  idle 48%  ticks 550.8  win 0%  incomplete 0

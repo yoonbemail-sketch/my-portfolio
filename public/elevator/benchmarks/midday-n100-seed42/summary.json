@@ -1,0 +1,93 @@
+{
+  "createdAt": "2026-11-24T20:37:40.989Z",
+  "elapsedMs": 328,
+  "settings": {
+    "hallDispatch": "sticky",
+    "n": 100,
+    "baseSeed": 42,
+    "peak": "midday",
+    "arrival": 0.15,
+    "interfloor": 0.1,
+    "floors": 20,
+    "elevators": 4,
+    "capacity": 8,
+    "dwell": 2,
+    "target": 80
+  },
+  "rankingByAvgWait": [
+    {
+      "rank": 1,
+      "strategy": "optimized",
+      "meanWait": 2.737,
+      "stdWait": 0.7267718682536138,
+      "meanMaxWait": 26.37,
+      "meanEmpty": 656.05,
+      "meanIdleFrac": 0.4857509995107154,
+      "meanTicks": 547.03,
+      "winRate": 65,
+      "incomplete": 0
+    },
+    {
+      "rank": 2,
+      "strategy": "spread",
+      "meanWait": 3.179374999999999,
+      "stdWait": 0.7003412204963112,
+      "meanMaxWait": 27.83,
+      "meanEmpty": 540.42,
+      "meanIdleFrac": 0.4877860611538846,
+      "meanTicks": 546.38,
+      "winRate": 25,
+      "incomplete": 0
+    },
+    {
+      "rank": 3,
+      "strategy": "stay",
+      "meanWait": 3.7621249999999993,
+      "stdWait": 0.8197346034392824,
+      "meanMaxWait": 31.1,
+      "meanEmpty": 191.1,
+      "meanIdleFrac": 0.4884491044753657,
+      "meanTicks": 547.89,
+      "winRate": 6,
+      "incomplete": 0
+    },
+    {
+      "rank": 4,
+      "strategy": "mid",
+      "meanWait": 3.839875,
+      "stdWait": 0.6232113167524183,
+      "meanMaxWait": 24.39,
+      "meanEmpty": 526.74,
+      "meanIdleFrac": 0.4761845445363765,
+      "meanTicks": 549.03,
+      "winRate": 4,
+      "incomplete": 0
+    },
+    {
+      "rank": 5,
+      "strategy": "demand",
+      "meanWait": 3.852124999999999,
+      "stdWait": 0.6814716301519971,
+      "meanMaxWait": 30.29,
+      "meanEmpty": 609.73,
+      "meanIdleFrac": 0.47875528329117906,
+      "meanTicks": 549.87,
+      "winRate": 2,
+      "incomplete": 0
+    },
+    {
+      "rank": 6,
+      "strategy": "lobby",
+      "meanWait": 4.437499999999999,
+      "stdWait": 0.8635031130590244,
+      "meanMaxWait": 32.62,
+      "meanEmpty": 416.92,
+      "meanIdleFrac": 0.4812896976577132,
+      "meanTicks": 550.79,
+      "winRate": 0,
+      "incomplete": 0
+    }
+  ],
+  "overallIdleFrac": 0.4830359484375385,
+  "overallRegime": "parking-sensitive"
+}

@@ -1152,3 +1152,116 @@ html.embed .legend {
         display: inline-flex;
     }
 }
+
+/* ---------- Simple view (default) vs advanced lab ---------- */
+
+html[data-mode="simple"] .adv-only,
+html[data-mode="advanced"] .simple-only {
+    display: none !important;
+}
+
+.mode-toggle {
+    margin-left: auto;
+}
+
+html[data-mode="advanced"] .mode-toggle {
+    border-color: var(--fill);
+}
+
+.answer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.25rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--fill);
+    border-radius: 0.5rem;
+    background: var(--panel);
+}
+
+.answer-text {
+    min-width: 0;
+}
+
+.answer-kicker {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.answer-headline {
+    margin-top: 0.2rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+}
+
+.answer-detail {
+    margin-top: 0.2rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+}
+
+.answer .btn {
+    flex-shrink: 0;
+}
+
+.metrics-note {
+    margin-top: -0.5rem;
+}
+
+html[data-mode="simple"] .metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+html[data-mode="simple"] .regime-preset {
+    flex: 1 1 100%;
+    text-align: left;
+}
+
+@media (max-width: 820px) {
+    html[data-mode="simple"] .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    html[data-mode="simple"] .metric-wide {
+        grid-column: auto;
+    }
+
+    /* Simple view has only a few controls: show them inline on phones */
+    html[data-mode="simple"] .controls {
+        display: flex;
+    }
+
+    html[data-mode="simple"] .btn.ghost.mobile-toggle {
+        display: none;
+    }
+
+    .answer {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+html.embed .answer {
+    padding: 0.65rem 0.8rem;
+}
+
+html.embed .answer-headline {
+    font-size: 0.95rem;
+}
+
+/* Phones: narrower building columns so all shafts and the waiting column fit */
+@media (max-width: 480px) {
+    .building {
+        grid-template-columns: 56px 32px repeat(var(--shaft-count, 4), minmax(40px, 1fr)) minmax(72px, 1.3fr);
+    }
+
+    .corner-header,
+    .floor-label {
+        left: 56px;
+    }
+}
